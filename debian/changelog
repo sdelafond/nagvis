@@ -1,3 +1,31 @@
+nagvis (1:1.4.6-2) unstable; urgency=medium
+
+  * Add myself to uploaders
+  * Acknowledge NMU (Closes: #595313)
+  * Only call ucf on purge if it's available (Closes: #620037)
+    * Set urgency to medium due to RC bug fix
+  * Set Path to gadget files in example configuration (via
+    patches/config.dpatch) (Closes: #611909)
+  * Properly set "Options FollowSymLinks" in the apache configuration
+    (Closes: #632333)
+  * Recommend real ndoutils package instead of the virtual one; no idea why
+    there is a virtual one (Closes: #598953)
+  * Remove previous maintainers from Uploaders.  Thanks to Hendrik and
+    Wolfgang for all their work!
+  * Actually install the documentation
+  * Bump standards (no changes needed)
+  * Add recommended targets to debian/rules
+
+ -- Alexander Reichle-Schmehl <tolimar@debian.org>  Wed, 07 Sep 2011 16:47:25 +0200
+
+nagvis (1:1.4.6-1.1) unstable; urgency=low
+
+  * Non-maintainer upload.
+  * Only try to configure local database, if ndoutils is run localy
+    (Closes: #595313)
+
+ -- Alexander Reichle-Schmehl <tolimar@debian.org>  Mon, 11 Oct 2010 13:55:28 +0200
+
 nagvis (1:1.4.6-1) unstable; urgency=low
 
   [ Hendrik Frenzel ]
