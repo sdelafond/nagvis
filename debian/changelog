@@ -1,3 +1,16 @@
+nagvis (1:1.4.6-1.1+squeeze1) stable; urgency=low
+
+  * Add myself to uploaders
+  * Actually install the documentation
+  * Properly set "Options FollowSymLinks" in the apache configuration
+    (Closes: #632333)
+  * Only call ucf on purge if it's available (Closes: #620037)
+  * Set Path to gadget files in example configuration (via
+    patches/config.dpatch) (Closes: #611909)
+  * Document on how to activate nagvis after installation (Partly fixes #626456)
+
+ -- Alexander Reichle-Schmehl <tolimar@debian.org>  Sat, 17 Sep 2011 21:58:51 +0300
+
 nagvis (1:1.4.6-1.1) unstable; urgency=low
 
   * Non-maintainer upload.

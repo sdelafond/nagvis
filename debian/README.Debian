@@ -1,6 +1,18 @@
 nagvis for Debian
 -----------------
 
+If nagvis doesn't work out of the box right after installation, please check
+the following steps:
+
+* Activate the ndoutils as described in
+  /usr/share/doc/ndoutils-nagios3-mysql/README.Debian
+* Check the [backend_ndomy_1] section of /etc/nagvis/nagvis.ini.php.
+  dbname, dbuser and dbpass must be set to the values specified in
+  /etc/dbconfig-common/ndoutils-mysql.conf.  Also make sure, that the entries are
+  not commented out with a leading ;
+
+ -- Alexander Reichle-Schmehl <tolimar@debian.org> Wed, 07 Sep 2011 21:43:21 +0200
+
 Since Version 1:1.4.6-1.1 you may also use nagvis with a remote database.
 However you'll need to configure the Database settings by hand.
 
