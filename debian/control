@@ -16,14 +16,14 @@ Vcs-Browser: http://anonscm.debian.org/gitweb/?p=pkg-nagios/pkg-nagvis.git;a=sum
 Package: nagvis
 Architecture: all
 Depends: ${misc:Depends},
-         php5-common (>= 5.3.0),
-         php5,
-         php5-gd,
+         php-common,
+         php,
+         php-gd,
          ucf,
          graphviz,
-         php5-sqlite,
+         php-sqlite3,
          php-net-socket,
-         php-gettext
+         php-php-gettext
 Suggests: check-mk-livestatus, nagvis-demos
 Description: visualization addon for Nagios or Icinga
  NagVis can be used to visualize Nagios or Icinga data, for instance

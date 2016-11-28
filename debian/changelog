@@ -1,3 +1,11 @@
+nagvis (1:1.7.10+dfsg1-3.1) unstable; urgency=medium
+
+  * Non-maintainer upload.
+  * Update Depends to PHP 7.0 (Closes: #821536)
+  * Update Depends to php-php-gettext (Closes: #837506)
+
+ -- Ondřej Surý <ondrej@debian.org>  Mon, 28 Nov 2016 15:05:07 +0100
+
 nagvis (1:1.7.10+dfsg1-3) unstable; urgency=medium
 
   * [4b7b449] Removed obsolete Pre-Depends on dpkg for dpkg-maintscript-helper

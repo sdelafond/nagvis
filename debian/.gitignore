@@ -1,7 +1,0 @@
-*.log
-*.substvars
-*.debhelper
-files
-tmp/
-nagvis/
-nagvis-demos/
