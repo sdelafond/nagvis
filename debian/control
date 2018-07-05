@@ -8,7 +8,7 @@ Uploaders: Markus Frosch <markus@lazyfrosch.de>,
 Build-Depends: debhelper (>= 7.0.50~),
                quilt,
                po-debconf
-Standards-Version: 3.9.5
+Standards-Version: 4.1.5
 Homepage: http://www.nagvis.org
 Vcs-Git: git://anonscm.debian.org/pkg-nagios/pkg-nagvis.git
 Vcs-Browser: http://anonscm.debian.org/gitweb/?p=pkg-nagios/pkg-nagvis.git;a=summary
