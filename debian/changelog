@@ -1,10 +1,22 @@
-nagvis (1:1.7.10+dfsg1-4) UNRELEASED; urgency=medium
+nagvis (1:1.9.10-1) unstable; urgency=medium
 
+  [ Bas Couwenberg ]
   * Team upload.
   * Update watch file for move to GitHub.
   * Bump Standards-Version to 4.2.1, no changes.
 
- -- Bas Couwenberg <sebastic@debian.org>  Sat, 24 Dec 2016 17:16:29 +0100
+  [ Sebastien Delafond ]
+  * NMU
+  * Add Files-Excluded to debian/copyright, even though those files are
+    gone in 1.9.x: this will make further repacking more straightforward,
+    should it be needed
+  * Add repacksuffix to debian/watch
+  * New upstream version 1.9.10 (Closes: #893723, #903706)
+  * Use db_stop at the end of postinst (Closes: #858042)
+  * Add pt_BR translation (Closes: #903369)
+  * Update Vcs-* URLs to point to salsa
+  
+ -- Sebastien Delafond <seb@debian.org>  Wed, 12 Dec 2018 07:46:19 +0100
 
 nagvis (1:1.7.10+dfsg1-3.1) unstable; urgency=medium
 
