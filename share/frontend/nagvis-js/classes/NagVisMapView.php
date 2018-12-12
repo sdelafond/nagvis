@@ -3,7 +3,7 @@
  *
  * NagVisMapView.php - Class for parsing the NagVis maps in nagvis-js frontend
  *
- * Copyright (c) 2004-2011 NagVis Project (Contact: info@nagvis.org)
+ * Copyright (c) 2004-2016 NagVis Project (Contact: info@nagvis.org)
  *
  * License:
  *
@@ -23,10 +23,9 @@
  *****************************************************************************/
 
 /**
- * @author	Lars Michelsen <lars@vertical-visions.de>
+ * @author	Lars Michelsen <lm@larsmichelsen.com>
  */
 class NagVisMapView {
-    private $CORE      = null;
     private $MAPCFG    = null;
     private $name      = '';
     private $search    = '';
@@ -34,15 +33,7 @@ class NagVisMapView {
     private $editMode  = false;
     private $aParams   = Array();
 
-    /**
-     * Class Constructor
-     *
-     * @param    GlobalCore      $CORE
-     * @param    String          $NAME
-     * @author 	Lars Michelsen <lars@vertical-visions.de>
-     */
     public function __construct(GlobalCore $CORE, $name) {
-        $this->CORE = $CORE;
         $this->name = $name;
     }
 
@@ -50,7 +41,7 @@ class NagVisMapView {
      * Set the search value if the user searches for an object
      *
      * @param   String    Search string
-     * @author  Lars Michelsen <lars@vertical-visions.de>
+     * @author  Lars Michelsen <lm@larsmichelsen.com>
      */
     public function setSearch($s) {
         $this->search = $s;
@@ -60,7 +51,7 @@ class NagVisMapView {
      * Set the rotation properties if the user wants a rotation
      *
      * @param   Array
-     * @author  Lars Michelsen <lars@vertical-visions.de>
+     * @author  Lars Michelsen <lm@larsmichelsen.com>
      */
     public function setRotation($a) {
         $this->aRotation = $a;
@@ -81,34 +72,33 @@ class NagVisMapView {
      * Parses the map and the objects for the nagvis-js frontend
      *
      * @return	String 	String with JS Code
-     * @author 	Lars Michelsen <lars@vertical-visions.de>
+     * @author 	Lars Michelsen <lm@larsmichelsen.com>
      */
     public function parse() {
+        global $_MAINCFG, $CORE;
         // Initialize template system
-        $TMPL    = new FrontendTemplateSystem($this->CORE);
+        $TMPL    = new FrontendTemplateSystem();
         $TMPLSYS = $TMPL->getTmplSys();
         $USERCFG = new CoreUserCfg();
 
-        $this->MAPCFG = new NagVisMapCfg($this->CORE, $this->name);
-        $this->MAPCFG->readMapConfig(ONLY_GLOBAL);
+        $this->MAPCFG = new GlobalMapCfg($this->name);
+        $this->MAPCFG->readMapConfig(ONLY_GLOBAL, true, true, true);
 
         $aData = Array(
-            'generalProperties'  => $this->CORE->getMainCfg()->parseGeneralProperties(),
-            'workerProperties'   => $this->CORE->getMainCfg()->parseWorkerProperties(),
+            'generalProperties'  => $_MAINCFG->parseGeneralProperties(),
+            'workerProperties'   => $_MAINCFG->parseWorkerProperties(),
             'rotationProperties' => json_encode($this->aRotation),
             'viewProperties'     => $this->parseViewProperties(),
-            'stateProperties'    => json_encode($this->CORE->getMainCfg()->getStateWeight()),
+            'stateProperties'    => json_encode($_MAINCFG->getStateWeightJS()),
+            'pageProperties'     => json_encode($this->MAPCFG->getMapProperties()),
             'userProperties'     => $USERCFG->doGetAsJson(),
             'mapName'            => $this->name,
+            'zoomFill'           => $this->MAPCFG->getValue(0, 'zoom') == 'fill',
             'fileAges'           => json_encode(Array(
-                'maincfg'   => $this->CORE->getMainCfg()->getConfigFileAge(),
+                'maincfg'   => $_MAINCFG->getConfigFileAge(),
                 $this->name => $this->MAPCFG->getFileModificationTime(),
             )),
-            'locales'            => json_encode(Array(
-                // FIXME: Duplicated definitions in NagVisMapView.php and NagVisOverviewView.php
-                'more items...' => l('more items...'),
-                'Create Object' => l('Create Object'),
-            )),
+            'locales'            => json_encode($CORE->getGeneralJSLocales()),
         );
 
         // Build page based on the template file and the data array
@@ -120,9 +110,10 @@ class NagVisMapView {
      * defined values which maybe given by url or session
      *
      * @return  String  JSON array
-     * @author  Lars Michelsen <lars@vertical-visions.de>
+     * @author  Lars Michelsen <lm@larsmichelsen.com>
      */
     private function parseViewProperties() {
+        global $AUTHORISATION;
         $arr = Array();
 
         $arr['search']                = $this->search;
@@ -133,8 +124,8 @@ class NagVisMapView {
         $arr['event_repeat_interval'] = intval($this->MAPCFG->getValue(0, 'event_repeat_interval'));
         $arr['event_repeat_duration'] = intval($this->MAPCFG->getValue(0, 'event_repeat_duration'));
         $arr['event_on_load']         = intval($this->MAPCFG->getValue(0, 'event_on_load'));
-        $arr['permitted_edit']        = $this->CORE->getAuthorization() !== null && $this->CORE->getAuthorization()->isPermitted('Map', 'edit', $this->name);
-        $arr['permitted_perform']     = $this->CORE->getAuthorization() !== null && $this->CORE->getAuthorization()->isPermitted('Action', 'perform', '*');
+        $arr['permitted_edit']        = $AUTHORISATION !== null && $AUTHORISATION->isPermitted('Map', 'edit', $this->name);
+        $arr['permitted_perform']     = $AUTHORISATION !== null && $AUTHORISATION->isPermitted('Action', 'perform', '*');
 
         // hover_menu & context_menu have to be handled separated from the others
         // It is special for them that the object individual settings have to be
@@ -146,7 +137,7 @@ class NagVisMapView {
             $arr['hover_menu'] = $userParams['hover_menu'];
         if(isset($userParams['context_menu']))
             $arr['context_menu'] = $userParams['context_menu'];
-        
+
         // This sets the user specific parameters
         $arr['user_params'] = $this->MAPCFG->getSourceParams(true, true);
         // This sets the final source parameters

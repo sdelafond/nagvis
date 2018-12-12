@@ -3,7 +3,7 @@
  *
  * ajax_error_handler.php - Ajax error handler for the NagVis ajax handlers
  *
- * Copyright (c) 2004-2011 NagVis Project (Contact: info@nagvis.org)
+ * Copyright (c) 2004-2016 NagVis Project (Contact: info@nagvis.org)
  *
  * License:
  *
@@ -27,7 +27,7 @@
  * This is a custom error handling function for submitting PHP errors to the
  * ajax requesting frontend
  *
- * @author     Lars Michelsen <lars@vertical-visions.de>
+ * @author     Lars Michelsen <lm@larsmichelsen.com>
  */
 
 function nagvisException($OBJ) {
@@ -37,6 +37,7 @@ function nagvisException($OBJ) {
             echo $OBJ;
         } else {
             echo "Error (".get_class($OBJ)."): ".$OBJ->getMessage();
+            var_dump(debug_backtrace());
         }
 
         die();

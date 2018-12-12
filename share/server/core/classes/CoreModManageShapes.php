@@ -3,7 +3,7 @@
  *
  * CoreModManageShapes.php - Core Map module to manage shapes in WUI
  *
- * Copyright (c) 2004-2011 NagVis Project (Contact: info@nagvis.org)
+ * Copyright (c) 2004-2016 NagVis Project (Contact: info@nagvis.org)
  *
  * License:
  *
@@ -23,7 +23,7 @@
  ******************************************************************************/
 
 /**
- * @author Lars Michelsen <lars@vertical-visions.de>
+ * @author Lars Michelsen <lm@larsmichelsen.com>
  */
 class CoreModManageShapes extends CoreModule {
     private $name = null;
@@ -34,11 +34,7 @@ class CoreModManageShapes extends CoreModule {
 
         // Register valid actions
         $this->aActions = Array(
-            // WUI specific actions
             'view'      => 'manage',
-            'checkUsed' => 'manage',
-            'doUpload'  => 'manage',
-            'doDelete'  => 'manage',
         );
     }
 
@@ -47,92 +43,14 @@ class CoreModManageShapes extends CoreModule {
 
         if($this->offersAction($this->sAction)) {
             switch($this->sAction) {
-                case 'checkUsed':
-                    $sReturn = json_encode($this->checkUsed());
-                break;
                 case 'view':
-                    $VIEW = new WuiViewManageShapes();
+                    $VIEW = new ViewManageShapes();
                     $sReturn = json_encode(Array('code' => $VIEW->parse()));
-                break;
-                case 'doDelete':
-                    $this->handleResponse('handleResponseDelete', 'doDelete',
-                                            l('The shape has been deleted.'),
-                                                                l('The shape could not be deleted.'),
-                                          1);
-                break;
-                case 'doUpload':
-                    if($this->handleResponse('handleResponseDoUpload', 'doUpload'))
-                        header('Location:'.$_SERVER['HTTP_REFERER']);
                 break;
             }
         }
 
         return $sReturn;
-    }
-
-    protected function handleResponseDoUpload() {
-        $FHANDLER = new CoreRequestHandler($_FILES);
-        $this->verifyValuesSet($FHANDLER, Array('image_file'));
-        return Array('image_file' => $FHANDLER->get('image_file'));
-    }
-
-    protected function doUpload($a) {
-        if(!is_uploaded_file($a['image_file']['tmp_name']))
-            throw new NagVisException(l('The file could not be uploaded (Error: [ERROR]).',
-              Array('ERROR' => $a['image_file']['error'].': '.$this->CORE->getUploadErrorMsg($a['image_file']['error']))));
-
-        $fileName = $a['image_file']['name'];
-
-        if(!preg_match(MATCH_PNG_GIF_JPG_FILE, $fileName))
-            throw new NagVisException(l('The uploaded file is no image (png,jpg,gif) file or contains unwanted chars.'));
-
-        $filePath = $this->CORE->getMainCfg()->getPath('sys', '', 'shapes').$fileName;
-        return move_uploaded_file($a['image_file']['tmp_name'], $filePath) && $this->CORE->setPerms($filePath);
-    }
-
-    protected function doDelete($a) {
-        $path = $this->CORE->getMainCfg()->getPath('sys', '', 'shapes', $a['image']);
-        if($path !== '')
-            return unlink($path);
-        else
-            return false;
-    }
-
-    protected function handleResponseDelete() {
-        $FHANDLER = new CoreRequestHandler($_POST);
-        $attr = Array('image' => MATCH_PNG_GIF_JPG_FILE);
-        $this->verifyValuesSet($FHANDLER,   $attr);
-        $this->verifyValuesMatch($FHANDLER, $attr);
-
-        if(!in_array($FHANDLER->get('image'), $this->CORE->getAvailableShapes()))
-            throw new NagVisException(l('The shape does not exist.'));
-
-        return Array('image' => $FHANDLER->get('image'));
-    }
-
-    protected function checkUsed() {
-        $FHANDLER = new CoreRequestHandler($_GET);
-        $attr = Array('image' => MATCH_PNG_GIF_JPG_FILE);
-        $this->verifyValuesSet($FHANDLER,   $attr);
-        $this->verifyValuesMatch($FHANDLER, $attr);
-        $image = $FHANDLER->get('image');
-
-        $using = Array();
-        foreach($this->CORE->getAvailableMaps() AS $map) {
-            $MAPCFG1 = new GlobalMapCfg($this->CORE, $map);
-            try {
-                $MAPCFG1->readMapConfig();
-            } catch(MapCfgInvalid $e) {
-                continue;
-            }
-
-            foreach($MAPCFG1->getDefinitions('shape') AS $key => $obj) {
-                if(isset($obj['icon']) && $obj['icon'] == $image) {
-                    $using[] = $MAPCFG1->getName();
-                }
-            }
-        }
-        return $using;
     }
 }
 ?>

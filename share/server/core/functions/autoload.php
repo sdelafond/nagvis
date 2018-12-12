@@ -3,7 +3,7 @@
  *
  * autoload.php - Class for defining the autoload method for NagVis
  *
- * Copyright (c) 2004-2011 NagVis Project (Contact: info@nagvis.org)
+ * Copyright (c) 2004-2016 NagVis Project (Contact: info@nagvis.org)
  *
  * License:
  *
@@ -27,12 +27,13 @@
  * problem with other autoloaders from external code
  *
  * @param   String  Name of the requested class
- * @author 	Lars Michelsen <lars@vertical-visions.de>
+ * @author 	Lars Michelsen <lm@larsmichelsen.com>
  */
 function NagVisAutoload($sClass) {
 	if(substr($sClass, 0, 8) === 'Frontend' 
 	   || substr($sClass, 0, 3) === 'Wui' 
 	   || substr($sClass, 0, 4) === 'Core' 
+	   || substr($sClass, 0, 4) === 'View'
 	   || substr($sClass, 0, 6) === 'NagVis'
 	   || substr($sClass, 0, 6) === 'Nagios' 
 	   || substr($sClass, 0, 6) === 'Global') {
@@ -44,5 +45,22 @@ function NagVisAutoload($sClass) {
 }
 
 spl_autoload_register('NagVisAutoload');
+
+/**
+ * loads all files located in core/functions directory. This directory
+ * might contain custom functions which extend NagVis in some way.
+ */
+$dir = '../../server/core/functions/';
+if ($handle = opendir($dir)) {
+    while (false !== ($file = readdir($handle))) {
+        if (preg_match(MATCH_PHP_FILE, $file)
+            && $file != 'autoload.php'
+            && $file != 'core.php'
+            && $file != 'index.php') {
+            require($dir.$file);
+        }
+    }
+    closedir($handle);
+}
 
 ?>

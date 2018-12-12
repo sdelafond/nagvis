@@ -3,7 +3,7 @@
  *
  * NagVisLoginView.php - Class for handling the login page
  *
- * Copyright (c) 2004-2011 NagVis Project (Contact: info@nagvis.org)
+ * Copyright (c) 2004-2016 NagVis Project (Contact: info@nagvis.org)
  *
  * License:
  *
@@ -23,31 +23,22 @@
  *****************************************************************************/
 
 /**
- * @author	Lars Michelsen <lars@vertical-visions.de>
+ * @author	Lars Michelsen <lm@larsmichelsen.com>
  */
 class NagVisLoginView {
-    private $CORE;
-
-    /**
-     * Class Constructor
-     *
-     * @param 	GlobalCore 	$CORE
-     * @author 	Lars Michelsen <lars@vertical-visions.de>
-     */
     public function __construct($CORE) {
-        $this->CORE = $CORE;
     }
 
     /**
      * Parses the information in html format
      *
      * @return	String 	String with Html Code
-     * @author 	Lars Michelsen <lars@vertical-visions.de>
+     * @author 	Lars Michelsen <lm@larsmichelsen.com>
      */
     public function parse() {
-        global $LOGIN_MSG;
+        global $LOGIN_MSG, $_MAINCFG;
         // Initialize template system
-        $TMPL = New FrontendTemplateSystem($this->CORE);
+        $TMPL = New FrontendTemplateSystem();
         $TMPLSYS = $TMPL->getTmplSys();
 
         $target = CoreRequestHandler::getRequestUri('');
@@ -62,14 +53,14 @@ class NagVisLoginView {
         }
 
         $aData = Array(
-            'generalProperties' => $this->CORE->getMainCfg()->parseGeneralProperties(),
+            'generalProperties' => $_MAINCFG->parseGeneralProperties(),
             'locales'           => json_encode(Array()),
             'pageTitle' => cfg('internal', 'title') . ' &rsaquo; Log In',
             'htmlBase' => cfg('paths', 'htmlbase'),
             'htmlJs' => cfg('paths', 'htmljs'),
             'htmlCss' => cfg('paths', 'htmlcss'),
             'formTarget' => $target,
-            'htmlTemplates' => $this->CORE->getMainCfg()->getPath('html', 'global', 'templates'),
+            'htmlTemplates' => path('html', 'global', 'templates'),
             'htmlImages' => cfg('paths', 'htmlimages'),
             'maxPasswordLength' => AUTH_MAX_PASSWORD_LENGTH,
             'maxUsernameLength' => AUTH_MAX_USERNAME_LENGTH,

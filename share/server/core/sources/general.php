@@ -5,15 +5,11 @@ global $viewParams;
 $viewParams = array(
     '*' => array(
         'sources',
-        'backend_id',
-        'iconset',
-
-        'width',
-        'height',
 
         'header_menu',
         'hover_menu',
         'context_menu',
+        'zoombar',
 
         'zoom',
     )
@@ -35,6 +31,17 @@ $configVars = array(
         'default'    => '',
         'match'      => MATCH_INTEGER_EMPTY,
         'field_type' => 'dimension',
+    ),
+);
+
+// Assign config variables to specific object types
+global $configVarMap;
+$configVarMap = array(
+    'global' => array(
+        'appearance' => array(
+            'width'  => null,
+            'height' => null,
+        ),
     ),
 );
 

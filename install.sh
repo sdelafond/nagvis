@@ -3,11 +3,11 @@
 #
 # install.sh - Installs/Updates NagVis
 #
-# Copyright (c) 2004-2011 NagVis Project (Contact: info@nagvis.org)
+# Copyright (c) 2004-2016 NagVis Project (Contact: info@nagvis.org)
 #
 # Development:
 #  Wolfgang Nieder
-#  Lars Michelsen <lars@vertical-visions.de>
+#  Lars Michelsen <lm@larsmichelsen.com>
 #
 # License:
 #
@@ -38,7 +38,7 @@ INSTALLER_CONFIG_MOD="y"
 # files to ignore/delete
 IGNORE_DEMO=""
 # backends to use
-NAGVIS_BACKENDS="mklivestatus,ndo2db,ido2db,merlinmy"
+NAGVIS_BACKENDS="mklivestatus,ndo2db,ido2db"
 # data source
 SOURCE=nagios
 # skip checks
@@ -63,6 +63,8 @@ NAGVIS_VER_OLD=""
 NAGVIS_CONF="etc/nagvis.ini.php"
 # Relative path to the NagVis SQLite auth database
 NAGVIS_AUTH_DB="etc/auth.db"
+NAGVIS_PERMS_DB="etc/perms.db"
+NAGVIS_WORLDMAP_DB="etc/worldmap.db"
 # File for saving the old removed map permissions
 AUTH_BACKUP="etc/auth-backup"
 # Default nagios web conf
@@ -193,7 +195,7 @@ License: GNU General Public License version 2
 
 Development:
 - Wolfgang Nieder
-- Lars Michelsen <lars@vertical-visions.de>
+- Lars Michelsen <lm@larsmichelsen.com>
 
 EOD
 }
@@ -410,6 +412,8 @@ detect_nagios_path() {
 detect_livestatus_socket() {
     if [ -S "/var/run/nagios/rw/live" ]; then
         LIVESTATUS_SOCK="unix:/var/run/nagios/rw/live"
+    elif [ -S "/var/run/icinga2/cmd/livestatus" ]; then
+        LIVESTATUS_SOCK="unix:/var/run/icinga2/cmd/livestatus"
     else
         LIVESTATUS_SOCK="unix:$NAGIOS_PATH/var/rw/live"
     fi
@@ -417,6 +421,11 @@ detect_livestatus_socket() {
  
 # Check Backend module prerequisites
 check_backend() {
+    # Do not ask in quiet mode
+    if [ $INSTALLER_QUIET -eq 0 ]; then
+        return
+    fi
+
     # Ask to configure the backends during update
     if [ $INSTALLER_ACTION = "update" ]; then
         confirm "Do you want to update the backend configuration?" "n"
@@ -558,15 +567,20 @@ check_backend() {
     fi
     
     BACKENDS=${BACKENDS#,}
-    [ ! -z "$BACKENDS" ] && CALL="$CALL -b $NAGVIS_BACKEND"
+    [ ! -z "$BACKENDS" ] && CALL="$CALL -i $BACKENDS"
 }
 
 # Check Apache PHP module
 check_apache_php() {
     DIR=$1
     [ ! -d $DIR ] && return
+
     WEB_PATH=${DIR%%/}
-    [ -d $DIR/conf.d ]&&WEB_PATH=$WEB_PATH/conf.d
+    if [ -d $DIR/conf-available ]; then
+        WEB_PATH=$WEB_PATH/conf-available
+    elif [ -d $DIR/conf.d ]; then
+        WEB_PATH=$WEB_PATH/conf.d
+    fi
     
     # The apache user/group are defined by env vars in Ubuntu, set them here
     [ -f $DIR/envvars ] && source $DIR/envvars
@@ -962,6 +976,12 @@ if [ $# -gt 0 ]; then
     done
 fi
 
+if [ $(($#-$OPTIND)) -gt 0 ]; then
+    echo "ERROR: Unprocessed command line parameter found. Maybe you provided an argument"
+    echo "       (dash missing) instead of the supported parameters."
+    exit 1
+fi
+
 if [ $FORCE -eq 1 ]; then
     if [ -z "$WEB_USER" -o -z "$WEB:GROUP" -o -z "$WEB_PATH" ]; then
         echo "ERROR: Using '-F' you also have to specify '-u ...', '-g ...' and '-w ...'"
@@ -1261,7 +1281,7 @@ copy "etc" "$NAGVIS_PATH"
 makedir "$NAGVIS_PATH/etc/conf.d"
 makedir "$NAGVIS_PATH/etc/profiles"
 copy "README" "$NAGVIS_PATH"
-copy "LICENCE" "$NAGVIS_PATH"
+copy "COPYING" "$NAGVIS_PATH"
 copy "docs" "$NAGVIS_PATH/share/" "" "*/cleanup_new_notes.sh"
 cmp_js $NAGVIS_PATH/share/frontend/nagvis-js/js
 
@@ -1440,6 +1460,12 @@ if [ "$INSTALLER_ACTION" = "update" -a "$NAGVIS_VER_OLD" != "UNKNOWN" ]; then
         LINE="Restoring auth database file..."
         restore "$NAGVIS_AUTH_DB" "auth database file" ""
         restore "$AUTH_BACKUP" "auth backup file" ""
+        if [ -f $NAGVIS_PATH_BACKUP/$NAGVIS_PERMS_DB ]; then
+            restore "$NAGVIS_PERMS_DB" "permission database file" ""
+        fi
+        if [ -f $NAGVIS_PATH_BACKUP/$NAGVIS_WORLDMAP_DB ]; then
+            restore "$NAGVIS_WORLDMAP_DB" "worldmap database file" ""
+        fi
 
         LINE="Restoring custom stylesheets..."
         restore "$USERFILES_DIR/styles/" "stylesheets" ""
@@ -1539,23 +1565,38 @@ if [ "$INSTALLER_ACTION" = "update" -a "$NAGVIS_VER_OLD" != "UNKNOWN" -a "$INSTA
         sed -i '/^hovertimeout=/d' $NAGVIS_PATH/etc/nagvis.ini.php
         chk_rc "| Error" "$DONE"
         
-        DONE=`log "Removing allowed_for_config option from map configs..." done`
-        grep -r '^allowed_for_config=' $NAGVIS_PATH/etc/maps/*.cfg >> $NAGVIS_PATH/$AUTH_BACKUP
-        sed -i '/^allowed_for_config=/d' $NAGVIS_PATH/etc/maps/*.cfg
+        DONE=`log "Removing requestmaxparams option from main config..." done`
+        sed -i '/^requestmaxparams=/d' $NAGVIS_PATH/etc/nagvis.ini.php
         chk_rc "| Error" "$DONE"
         
-        DONE=`log "Removing allowed_user from map configs..." done`
-        grep -r '^allowed_user=' $NAGVIS_PATH/etc/maps/*.cfg >> $NAGVIS_PATH/$AUTH_BACKUP
-        sed -i '/^allowed_user=/d' $NAGVIS_PATH/etc/maps/*.cfg
+        DONE=`log "Removing requestmaxlength option from main config..." done`
+        sed -i '/^requestmaxlength=/d' $NAGVIS_PATH/etc/nagvis.ini.php
         chk_rc "| Error" "$DONE"
+        
+        # Remove options from maps only if maps are defined
+        if [ `find $NAGVIS_PATH/etc/maps -type f -name "*.cfg" | wc -l` -gt 0 ]; then
+            DONE=`log "Removing allowed_for_config option from map configs..." done`
+            grep -r '^allowed_for_config=' $NAGVIS_PATH/etc/maps/*.cfg >> $NAGVIS_PATH/$AUTH_BACKUP
+            sed -i '/^allowed_for_config=/d' $NAGVIS_PATH/etc/maps/*.cfg
+            chk_rc "| Error" "$DONE"
 
-        DONE=`log "Removing hover_timeout from map configs..." done`
-        sed -i '/^hover_timeout=/d' $NAGVIS_PATH/etc/maps/*.cfg
-        chk_rc "| Error" "$DONE"
+            DONE=`log "Removing allowed_user from map configs..." done`
+            grep -r '^allowed_user=' $NAGVIS_PATH/etc/maps/*.cfg >> $NAGVIS_PATH/$AUTH_BACKUP
+            sed -i '/^allowed_user=/d' $NAGVIS_PATH/etc/maps/*.cfg
+            chk_rc "| Error" "$DONE"
 
-        DONE=`log "Removing usegdlibs from map configs..." done`
-        sed -i '/^usegdlibs=/d' $NAGVIS_PATH/etc/maps/*.cfg
-        chk_rc "| Error" "$DONE"
+            DONE=`log "Removing hover_timeout from map configs..." done`
+            sed -i '/^hover_timeout=/d' $NAGVIS_PATH/etc/maps/*.cfg
+            chk_rc "| Error" "$DONE"
+
+            DONE=`log "Removing usegdlibs from map configs..." done`
+            sed -i '/^usegdlibs=/d' $NAGVIS_PATH/etc/maps/*.cfg
+            chk_rc "| Error" "$DONE"
+
+            DONE=`log "Removing gadget_type from map configs..." done`
+            sed -i '/^gadget_type=/d' $NAGVIS_PATH/etc/maps/*.cfg
+            chk_rc "| Error" "$DONE"
+        fi
 
         line
     fi

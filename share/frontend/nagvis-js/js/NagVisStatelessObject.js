@@ -3,7 +3,7 @@
  * NagVisStatelessObject.js - This class handles the visualisation of
  *                            stateless objects like shape and textbox
  *
- * Copyright (c) 2004-2011 NagVis Project (Contact: info@nagvis.org)
+ * Copyright (c) 2004-2016 NagVis Project (Contact: info@nagvis.org)
  *
  * License:
  *
@@ -22,50 +22,6 @@
  *
  *****************************************************************************/
 
-/**
- * @author	Lars Michelsen <lars@vertical-visions.de>
- */
-
 var NagVisStatelessObject = NagVisObject.extend({
     has_state: false,
-
-    // Initialize
-    constructor: function(oConf) {
-        // Call parent constructor
-        this.base(oConf);
-    },
-
-    /**
-     * Is called to remove the rendered object
-     * This must not remove the object from the JS lists
-     */
-    remove: function () {
-        if(!this.parsedObject)
-            return;
-
-        // Remove event listeners
-        var oObj;
-        oObj = document.getElementById(this.conf.object_id);
-        if(oObj) {
-            oObj.onmousedown = null;
-            oObj.oncontextmenu = null;
-            oObj.onmouseover = null;
-            oObj.onmouseout = null;
-            oObj = null;
-        }
-
-        // Remove all controls
-        if(!this.bIsLocked)
-            this.removeControls();
-
-        // Remove object from DOM
-        var oMap = document.getElementById('map');
-        if(oMap) {
-            oMap.removeChild(this.parsedObject);
-            oMap = null;
-        }
-
-        // Remove object reference
-        this.parsedObject = null;
-    }
 });

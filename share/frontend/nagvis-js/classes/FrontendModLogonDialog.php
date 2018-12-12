@@ -3,7 +3,7 @@
  *
  * FrontendModLogonDialog.php - Module for showing the logon dialog in NagVis
  *
- * Copyright (c) 2004-2011 NagVis Project (Contact: info@nagvis.org)
+ * Copyright (c) 2004-2016 NagVis Project (Contact: info@nagvis.org)
  *
  * License:
  *
@@ -23,7 +23,7 @@
  *****************************************************************************/
 
 /**
- * @author	Lars Michelsen <lars@vertical-visions.de>
+ * @author	Lars Michelsen <lm@larsmichelsen.com>
  */
 class FrontendModLogonDialog extends FrontendModule {
     protected $CORE;

@@ -3,7 +3,7 @@
  *
  * CoreAuthModule.php - Abstract definition of a CoreAuthModule
  *
- * Copyright (c) 2004-2011 NagVis Project (Contact: info@nagvis.org)
+ * Copyright (c) 2004-2016 NagVis Project (Contact: info@nagvis.org)
  *
  * License:
  *
@@ -26,7 +26,7 @@
  * Abstract definition of a CoreAuthModule
  * All authentication modules should extend this class
  *
- * @author Lars Michelsen <lars@vertical-visions.de>
+ * @author Lars Michelsen <lm@larsmichelsen.com>
  */
 abstract class CoreAuthModule {
     protected static $aFeatures;
@@ -37,7 +37,7 @@ abstract class CoreAuthModule {
      * Returns a list of supported features
      *
      * @return	Array
-     * @author	Lars Michelsen <lars@vertical-visions.de>
+     * @author	Lars Michelsen <lm@larsmichelsen.com>
      */
     public function getSupportedFeatures() {
         return self::$aFeatures;

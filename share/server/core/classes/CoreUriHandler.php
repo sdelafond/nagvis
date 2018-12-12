@@ -3,7 +3,7 @@
  *
  * CoreUriHandler.php - Class to handle uri parsing
  *
- * Copyright (c) 2004-2011 NagVis Project (Contact: info@nagvis.org)
+ * Copyright (c) 2004-2016 NagVis Project (Contact: info@nagvis.org)
  *
  * License:
  *
@@ -23,18 +23,15 @@
  ******************************************************************************/
 
 /**
- * @author Lars Michelsen <lars@vertical-visions.de>
+ * @author Lars Michelsen <lm@larsmichelsen.com>
  */
 class CoreUriHandler {
-    private $CORE;
     private $sRequestUri;
     private $aOpts;
 
     private $aAliases;
 
     public function __construct() {
-        $this->CORE = GlobalCore::getInstance();
-
         $this->aAliases = Array('module' => 'mod', 'action' => 'act');
 
         $this->sRequestUri = strip_tags($_SERVER['REQUEST_URI']);
@@ -104,7 +101,7 @@ class CoreUriHandler {
                 $this->aOpts[$key] = $_GET[$key];
             } else {
                 throw new NagVisException(l('The parameter "[key]" does not match the valid value format',
-                                            Array('key' => htmlentities($key))));
+                                            Array('key' => htmlentities($key, ENT_COMPAT, 'UTF-8'))));
             }
         }
     }

@@ -5,7 +5,7 @@
  *                          in newer PHP versions but are already needed by
  *                          NagVis PHP code
  *
- * Copyright (c) 2004-2011 NagVis Project (Contact: info@nagvis.org)
+ * Copyright (c) 2004-2016 NagVis Project (Contact: info@nagvis.org)
  *
  * License:
  *
@@ -25,14 +25,14 @@
  *****************************************************************************/
  
 /**
- * @author	Lars Michelsen <lars@vertical-visions.de>
+ * @author	Lars Michelsen <lm@larsmichelsen.com>
  */
 
 /**
  * This implements the function date_default_timezone_set() which is needed
  * since PHP 5.1 by all PHP date functions
  *
- * @author 	Lars Michelsen <lars@vertical-visions.de>
+ * @author 	Lars Michelsen <lm@larsmichelsen.com>
  */
 if(!function_exists('date_default_timezone_set')) {
 	function date_default_timezone_set($timezone_identifier) {
@@ -54,6 +54,8 @@ if(!function_exists('date_default_timezone_set')) {
 if(function_exists("date_default_timezone_get"))
     date_default_timezone_set(@date_default_timezone_get());
 
+if (version_compare(PHP_VERSION, '5.2.0') < 0) {
+
 /**
  * Implements handling of PHP to JSON conversion for NagVis
  * (Needed for < PHP 5.2.0)
@@ -61,7 +63,7 @@ if(function_exists("date_default_timezone_get"))
  * Function taken from http://de.php.net/json_encode (Steve 01-May-2008 02:35)
  *
  * @param		String		Debug message
- * @author 	Lars Michelsen <lars@vertical-visions.de>
+ * @author 	Lars Michelsen <lm@larsmichelsen.com>
  */
 if (!function_exists('json_encode')) {
         define('COMPAT_JSON_ENCODE', True);
@@ -110,7 +112,7 @@ if (!function_exists('json_encode')) {
  * hope thats okay...
  *
  * @param   String    Debug message
- * @author  Lars Michelsen <lars@vertical-visions.de>
+ * @author  Lars Michelsen <lm@larsmichelsen.com>
  */
 if(!function_exists('json_decode')){
         define('COMPAT_JSON_DECODE', True);
@@ -245,7 +247,7 @@ if(!class_exists('Services_JSON')) {
 			*                                   bubble up with an error, so all return values
 			*                                   from encode() should be checked with isError()
 			*/
-			function Services_JSON($use = 0)
+			function __construct($use = 0)
 			{
 					$this->use = $use;
 			}
@@ -895,7 +897,7 @@ if(!class_exists('Services_JSON')) {
 
 			class Services_JSON_Error extends PEAR_Error
 			{
-					function Services_JSON_Error($message = 'unknown error', $code = null,
+					function __construct($message = 'unknown error', $code = null,
 																			$mode = null, $options = null, $userinfo = null)
 					{
 							parent::PEAR_Error($message, $code, $mode, $options, $userinfo);
@@ -909,7 +911,7 @@ if(!class_exists('Services_JSON')) {
 			*/
 			class Services_JSON_Error
 			{
-					function Services_JSON_Error($message = 'unknown error', $code = null,
+					function __construct($message = 'unknown error', $code = null,
 																			$mode = null, $options = null, $userinfo = null)
 					{
 
@@ -978,7 +980,7 @@ if(!class_exists('PEAR_Error')) {
 	     * @access public
 	     *
 	     */
-	    function PEAR_Error($message = 'unknown error', $code = null,
+	    function __construct($message = 'unknown error', $code = null,
 	                        $mode = null, $options = null, $userinfo = null) {
 	        if ($mode === null) {
 	            $mode = PEAR_ERROR_RETURN;
@@ -1037,9 +1039,6 @@ if(!class_exists('PEAR_Error')) {
 	        }
 	    }
 	 
-	    // }}}
-	    // {{{ getMode()
-	 
 	    /**
 	     * Get the error mode from an error object.
 	     *
@@ -1050,9 +1049,6 @@ if(!class_exists('PEAR_Error')) {
 	        return $this->mode;
 	    }
 	 
-	    // }}}
-	    // {{{ getCallback()
-	 
 	    /**
 	     * Get the callback function/method from an error object.
 	     *
@@ -1062,10 +1058,6 @@ if(!class_exists('PEAR_Error')) {
 	    function getCallback() {
 	        return $this->callback;
 	    }
-	 
-	    // }}}
-	    // {{{ getMessage()
-	 
 	 
 	    /**
 	     * Get the error message from an error object.
@@ -1078,10 +1070,6 @@ if(!class_exists('PEAR_Error')) {
 	        return ($this->error_message_prefix . $this->message);
 	    }
 	 
-	 
-	    // }}}
-	    // {{{ getCode()
-	 
 	    /**
 	     * Get error code from an error object
 	     *
@@ -1092,9 +1080,6 @@ if(!class_exists('PEAR_Error')) {
 	     {
 	        return $this->code;
 	     }
-	 
-	    // }}}
-	    // {{{ getType()
 	 
 	    /**
 	     * Get the name of this error/exception.
@@ -1107,9 +1092,6 @@ if(!class_exists('PEAR_Error')) {
 	        return get_class($this);
 	    }
 	 
-	    // }}}
-	    // {{{ getUserInfo()
-	 
 	    /**
 	     * Get additional user-supplied information.
 	     *
@@ -1121,9 +1103,6 @@ if(!class_exists('PEAR_Error')) {
 	        return $this->userinfo;
 	    }
 	 
-	    // }}}
-	    // {{{ getDebugInfo()
-	 
 	    /**
 	     * Get additional debug information supplied by the application.
 	     *
@@ -1134,9 +1113,6 @@ if(!class_exists('PEAR_Error')) {
 	    {
 	        return $this->getUserInfo();
 	    }
-	 
-	    // }}}
-	    // {{{ getBacktrace()
 	 
 	    /**
 	     * Get the call backtrace from where the error was generated.
@@ -1157,9 +1133,6 @@ if(!class_exists('PEAR_Error')) {
 	        return $this->backtrace[$frame];
 	    }
 	 
-	    // }}}
-	    // {{{ addUserInfo()
-	 
 	    function addUserInfo($info)
 	    {
 	        if (empty($this->userinfo)) {
@@ -1169,14 +1142,10 @@ if(!class_exists('PEAR_Error')) {
 	        }
 	    }
 	 
-	    // }}}
-	    // {{{ toString()
 	    function __toString()
 	    {
 	        return $this->getMessage();
 	    }
-	    // }}}
-	    // {{{ toString()
 	 
 	    /**
 	     * Make a string representation of this object.
@@ -1224,5 +1193,11 @@ if(!class_exists('PEAR_Error')) {
 	                       $this->userinfo);
 	    }
 	}
+}
+
+}
+else {
+        define('COMPAT_JSON_ENCODE', False);
+        define('COMPAT_JSON_DECODE', False);
 }
 ?>

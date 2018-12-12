@@ -1,10 +1,10 @@
 #!/bin/bash
 # omd_install.sh - Installs NagVis to the local/ path of OMD sites
 #
-# Copyright (c) 2004-2011 NagVis Project (Contact: info@nagvis.org)
+# Copyright (c) 2004-2016 NagVis Project (Contact: info@nagvis.org)
 #
 # Development:
-#  Lars Michelsen <lars@vertical-visions.de>
+#  Lars Michelsen <lm@larsmichelsen.com>
 #
 # License:
 #
@@ -102,6 +102,7 @@ cat > $OMD_CFG <<EOF
 
 [global]
 sesscookiepath="/$OMD_SITE/nagvis"
+authorisation_group_perms_file="$OMD_ROOT/etc/nagvis/perms.db"
 
 [paths]
 base="$OMD_ROOT/local/share/nagvis/"
@@ -120,6 +121,13 @@ backend="$OMD_SITE"
 [backend_$OMD_SITE]
 backendtype="mklivestatus"
 socket="unix:$OMD_ROOT/tmp/run/live"
+
+[backend_${OMD_SITE}_bi]
+backendtype="mkbi"
+base_url="http://localhost/$OMD_SITE/check_mk/"
+auth_user="automation"
+auth_secret_file="$OMD_ROOT/var/check_mk/web/automation/automation.secret"
+timeout=10
 EOF
 
 # Backup the agvis.conf on first time using omd_install.sh
@@ -197,12 +205,12 @@ patch -s $OMD_ROOT/local/share/nagvis/htdocs/server/core/defines/global.php <<EO
  	get_include_path()
 -	.PATH_SEPARATOR.'../../server/core/classes'
 -	.PATH_SEPARATOR.'../../server/core/classes/objects'
--	.PATH_SEPARATOR.'../../server/core/ext/php-gettext-1.0.9'
+-	.PATH_SEPARATOR.'../../server/core/ext/php-gettext-1.0.12'
 +	.PATH_SEPARATOR.\$_base_dir.'/local/share/nagvis/htdocs/server/core/classes'
 +	.PATH_SEPARATOR.\$_base_dir.'/local/share/nagvis/htdocs/server/core/classes/objects'
 +	.PATH_SEPARATOR.\$_base_dir.'/share/nagvis/htdocs/server/core/classes'
 +	.PATH_SEPARATOR.\$_base_dir.'/share/nagvis/htdocs/server/core/classes/objects'
-+	.PATH_SEPARATOR.\$_base_dir.'/share/nagvis/htdocs/server/core/ext/php-gettext-1.0.9'
++	.PATH_SEPARATOR.\$_base_dir.'/share/nagvis/htdocs/server/core/ext/php-gettext-1.0.12'
  );
  
  // Enable/Disable profiling of NagVis using xhprof.  To make use of this the

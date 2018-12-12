@@ -3,7 +3,7 @@
  *
  * CoreSessionHandler.php - Class to handle PHP session data
  *
- * Copyright (c) 2004-2011 NagVis Project (Contact: info@nagvis.org)
+ * Copyright (c) 2004-2016 NagVis Project (Contact: info@nagvis.org)
  *
  * License:
  *
@@ -26,7 +26,7 @@
  * Class for handlin the PHP sessions. The sessions are used to store
  * information between loading different pages.
  *
- * @author Lars Michelsen <lars@vertical-visions.de>
+ * @author Lars Michelsen <lm@larsmichelsen.com>
  */
 class CoreSessionHandler {
 
@@ -34,6 +34,8 @@ class CoreSessionHandler {
         $sDomain   = cfg('global', 'sesscookiedomain');
         $sPath     = cfg('global', 'sesscookiepath');
         $iDuration = cfg('global', 'sesscookieduration');
+        $bSecure   = cfg('global', 'sesscookiesecure') == 1;
+        $bHTTPOnly = cfg('global', 'sesscookiehttponly') == 1;
 
         // Set the session name (used in params/cookie names)
         session_name(SESSION_NAME);
@@ -49,7 +51,10 @@ class CoreSessionHandler {
             $sDomain = null;
 
         // Set custom params for the session cookie
-        session_set_cookie_params(0, $sPath, $sDomain);
+        if (version_compare(PHP_VERSION, '5.2') >= 0)
+            session_set_cookie_params(0, $sPath, $sDomain, $bSecure, $bHTTPOnly);
+        else
+            session_set_cookie_params(0, $sPath, $sDomain, $bSecure);
 
         // Start a session for the user when not started yet
         if(!isset($_SESSION)) {
@@ -78,7 +83,7 @@ class CoreSessionHandler {
             // the half of the expiration time has passed
             if(time() >= $this->get('sessionExpires') - ($iDuration/2)) {
                 $exp = time() + $iDuration;
-                setcookie(SESSION_NAME, $_COOKIE[SESSION_NAME], $exp, $sPath, $sDomain);
+                setcookie(SESSION_NAME, $_COOKIE[SESSION_NAME], $exp, $sPath, $sDomain, $bSecure, $bHTTPOnly);
 
                 // Store the update time of the session cookie
                 $this->set('sessionExpires', $exp);

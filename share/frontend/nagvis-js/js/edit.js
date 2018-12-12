@@ -2,7 +2,7 @@
  *
  * edit.js - Some NagVis edit code
  *
- * Copyright (c) 2004-2011 NagVis Project (Contact: info@nagvis.org)
+ * Copyright (c) 2004-2016 NagVis Project (Contact: info@nagvis.org)
  *
  * License:
  *
@@ -21,58 +21,35 @@
  *
  *****************************************************************************/
 
-/**
- * @author	Lars Michelsen <lars@vertical-visions.de>
- */
-
-/**
- * Changes the handling of the line middle for lines with two parts
- */
-function toggleLineMidLock(event, objectId) {
-    getMapObjByDomObjId(objectId).toggleLineMidLock();
-
-    var event = !event ? window.event : event;
-    if(event.stopPropagation)
-    event.stopPropagation();
-    event.cancelBubble = true;
-    return false;
+function getTargetRaw(event) {
+    return event.target ? event.target : event.srcElement;
 }
 
-/**
- * Toggles the mode of the object: editable or not
- *
- * @author	Lars Michelsen <lars@vertical-visions.de>
- */
-function toggleMapObjectLock(event, objectId) {
-    updateNumUnlocked(getMapObjByDomObjId(objectId).toggleLock());
-
-    var event = !event ? window.event : event;
-    if(event.stopPropagation)
-    event.stopPropagation();
-    event.cancelBubble = true;
-    return false;
+function getTargetByClass(event, className) {
+    var target = getTargetRaw(event);
+    while (target && !has_class(target, className))
+        target = target.parentNode;
+    return target;
 }
 
-/**
- * Toggles the mode of all map objects: editable or not
- *
- * @author	Lars Michelsen <lars@vertical-visions.de>
- */
-function toggleAllMapObjectsLock() {
-    var lock = false;
-    if(iNumUnlocked > 0)
-        lock = true;
+function toggleMapObjectLock(event, object_id) {
+    g_view.toggleObjectLock(object_id);
+    return preventDefaultEvents(event);
+}
 
-    for(var i in oMapObjects)
-        updateNumUnlocked(oMapObjects[i].toggleLock(lock));
+// Toggles the mode of all map objects: editable or not
+function toggleAllMapObjectsLock(event) {
+    var lock = g_view.hasUnlocked();
 
-    if(!lock)
+    for (var object_id in g_view.objects)
+        g_view.toggleObjectLock(object_id, lock);
+
+    if (!lock)
         storeUserOption('unlocked-' + oPageProperties.map_name, '*');
     else
         storeUserOption('unlocked-' + oPageProperties.map_name, '');
+    return preventDefaultEvents(event);
 }
-
-/*** Handles the object dragging ***/
 
 var draggingEnabled = true;
 var draggingObject = null;
@@ -82,19 +59,187 @@ var dragObjectStartPos = null;
 var dragObjectChilds = {};
 var dragStopHandlers = {};
 var dragMoveHandlers = {};
+var dragObjects      = {};
 
-function getTarget(event, ignoreType) {
-    if(typeof(ignoreType) === 'undefined')
-        var ignoreType = null;
+var g_resize_obj = null; //This gets a value as soon as a resize start
 
-    var target = event.target ? event.target : event.srcElement;
-    while(target && (target.tagName != 'DIV' 
-          || typeof(target.id) === 'undefined'
-          || (ignoreType !== null && (target.id.split('-')[1] === ignoreType)))) {
-        target = target.parentNode;
-    }
-    return target;
+/** Object resizing **/
+
+function g_resize_object() {
+    this.el        = null; //pointer to the object
+    this.dir    = "";      //type of current resize (n, s, e, w, ne, nw, se, sw)
+    this.grabx = null;     //Some useful values
+    this.graby = null;
+    this.width = null;
+    this.height = null;
+    this.left = null;
+    this.top = null;
 }
+
+// Find out what kind of resize! Return a string inlcluding the directions
+function getDirection(event, el) {
+    var xPos, yPos, offset, dir;
+    dir = "";
+
+    // Handle IE and other browsers
+    xPos = event.offsetX ? event.offsetX : event.layerX ? event.layerX : 0;
+    yPos = event.offsetY ? event.offsetY : event.layerY ? event.layerY : 0;
+
+    // The distance from the edge in pixels
+    offset = 8;
+
+    if (yPos < offset) {
+        dir += "n";
+    }	else if (yPos > el.offsetHeight - offset) {
+        dir += "s";
+    }
+
+    if(xPos < offset) {
+        dir += "w";
+    }	else if (xPos > el.offsetWidth - offset) {
+        dir += "e";
+    }
+
+    return dir;
+}
+
+function resizeMouseDown(event) {
+    event = event || window.event;
+    var target = getTargetByClass(event, 'resizeable');
+
+    if (!target || target.id == '')
+        return true;
+
+    var dir = getDirection(event, target);
+    if (dir == "")
+        return true;
+
+    // Disable dragging while resizing
+    draggingEnabled = false;
+    draggingObject = null;
+
+    g_resize_obj = new g_resize_object();
+
+    g_resize_obj.el = target;
+    g_resize_obj.dir = dir;
+
+    g_resize_obj.grabx  = event.clientX;
+    g_resize_obj.graby  = event.clientY;
+    g_resize_obj.width  = target.offsetWidth;
+    g_resize_obj.height = target.offsetHeight;
+    g_resize_obj.left   = pxToInt(target.style.left);
+    g_resize_obj.top    = pxToInt(target.style.top);
+
+    return preventDefaultEvents(event);
+}
+
+function resizeMouseUp(event) {
+    event = event || window.event;
+    if (g_resize_obj === null)
+        return true;
+
+    // Re-enable dragging
+    draggingEnabled = true;
+    draggingObject = null;
+
+    var dom_obj = g_resize_obj.el;
+
+    var objId = dom_obj.id.split('-')[0];
+    var objX = rmZoomFactor(pxToInt(dom_obj.style.left), true);
+    var objY = rmZoomFactor(pxToInt(dom_obj.style.top), true);
+    var objW = rmZoomFactor(parseInt(dom_obj.style.width));
+    var objH = rmZoomFactor(parseInt(dom_obj.style.height));
+
+    // Reposition in frontend
+    var obj = getMapObjByDomObjId(objId);
+    obj.conf.x = objX;
+    obj.conf.y = objY;
+    obj.conf.w = objW;
+    obj.conf.h = objH;
+    obj.place();
+
+    if (!isInt(objX) || !isInt(objY) || !isInt(objW) || !isInt(objH)) {
+        alert('ERROR: Invalid coords ('+objX+'/'+objY+'/'+objW+'/'+objH+'). Terminating.');
+        return false;
+    }
+
+    var parts = g_view.unproject(objX, objY);
+    objX = parts[0];
+    objY = parts[1];
+
+    saveObjectAttr(objId, {
+        'x': objX,
+        'y': objY,
+        'w': objW,
+        'h': objH
+    });
+
+    g_resize_obj = null;
+
+    return preventDefaultEvents(event);
+}
+
+function resizeMouseMove(event) {
+    event = event || window.event;
+    var target = getTargetByClass(event, 'resizeable');
+
+    // First update the cursor. This needs to be done even
+    // when not yet resizing to visualize that it is possible
+
+    if (target) {
+        var str = getDirection(event, target);
+
+        // Fix the cursor
+        if (str == "")
+            str = "";
+        else
+            str += "-resize";
+        target.style.cursor = str;
+    }
+
+    // The following code is only relevant when already resizing
+
+    if (g_resize_obj === null)
+        return true;
+
+    var xMin = 8, // The smallest width and height possible
+        yMin = 8;
+
+    if(g_resize_obj.dir.indexOf("e") != -1)
+        g_resize_obj.el.style.width = Math.max(xMin, g_resize_obj.width + event.clientX - g_resize_obj.grabx) + "px";
+
+    if(g_resize_obj.dir.indexOf("s") != -1) {
+        g_resize_obj.el.style.height = Math.max(yMin, g_resize_obj.height + event.clientY - g_resize_obj.graby) + "px";
+    }
+
+    if(g_resize_obj.dir.indexOf("w") != -1) {
+        g_resize_obj.el.style.left = Math.min(g_resize_obj.left + event.clientX - g_resize_obj.grabx, g_resize_obj.left + g_resize_obj.width - xMin) + "px";
+        g_resize_obj.el.style.width = Math.max(xMin, g_resize_obj.width - event.clientX + g_resize_obj.grabx) + "px";
+    }
+    if(g_resize_obj.dir.indexOf("n") != -1) {
+        g_resize_obj.el.style.top = Math.min(g_resize_obj.top + event.clientY - g_resize_obj.graby, g_resize_obj.top + g_resize_obj.height - yMin) + "px";
+        g_resize_obj.el.style.height = Math.max(yMin, g_resize_obj.height - event.clientY + g_resize_obj.graby) + "px";
+    }
+
+    return preventDefaultEvents(event);
+}
+
+function makeResizeable(trigger_obj) {
+    add_class(trigger_obj, 'resizeable');
+    addEvent(trigger_obj, 'mousedown', resizeMouseDown);
+    addEvent(trigger_obj, 'mouseup', resizeMouseUp);
+}
+
+function makeUnresizeable(trigger_obj) {
+    // when locking the object while the cursor is a resize cursor,
+    // it will stay as it is, when not removing them.
+    trigger_obj.style.cursor = '';
+    remove_class(trigger_obj, 'resizeable');
+    removeEvent(trigger_obj, 'mousedown', resizeMouseDown);
+    removeEvent(trigger_obj, 'mouseup', resizeMouseUp);
+}
+
+/*** Handles the object dragging ***/
 
 function getButton(event) {
     if (event.which == null)
@@ -105,171 +250,157 @@ function getButton(event) {
         return (event.which < 2) ? "LEFT" : ((event.which == 2) ? "MIDDLE" : "RIGHT");
 }
 
-function makeUndragable(objects) {
-    var len = objects.length;
-    if(len == 0)
-        return false;
+function makeUndragable(trigger_obj) {
+    delete dragStopHandlers[trigger_obj.id];
+    delete dragMoveHandlers[trigger_obj.id];
+    delete dragObjects[trigger_obj.id];
 
-    for(var i = 0; i < len; i++) {
-	if(typeof(objects[i]) === 'object')
-	    var o = objects[i];
-	else
-            var o = document.getElementById(objects[i]);
+    remove_class(trigger_obj, 'dragger');
 
-        if(o)  {
-            // Remove the handlers
-            delete dragStopHandlers[o.id];
-            delete dragMoveHandlers[o.id];
-
-            removeEvent(o, 'mousedown', dragStart);
-            removeEvent(o, 'mouseup',   dragStop);
-
-            o = null;
-        }
-    }
+    removeEvent(trigger_obj, 'mousedown', dragStart);
+    removeEvent(document, 'mouseup', dragStop);
 }
 
-function makeDragable(objects, dragStopHandler, dragMoveHandler) {
-    var len = objects.length;
-    if(len == 0)
-        return false;
+function makeDragable(trigger_obj, obj, dragStopHandler, dragMoveHandler) {
+    dragStopHandlers[trigger_obj.id] = dragStopHandler;
+    dragMoveHandlers[trigger_obj.id] = dragMoveHandler;
+    dragObjects[trigger_obj.id] = obj;
 
-    for(var i = 0; i < len; i++) {
-	if(typeof(objects[i]) === 'object')
-	    var o = objects[i];
-	else
-            var o = document.getElementById(objects[i]);
+    add_class(trigger_obj, 'dragger');
 
-        if(o) {
-            // Register the handlers
-            dragStopHandlers[o.id] = dragStopHandler;
-            dragMoveHandlers[o.id] = dragMoveHandler;
-
-            addEvent(o, "mousedown", dragStart);
-            // The drag stop event is registered globally on the whole document to prevent
-            // problems with too fast mouse movement which might lead to lag the dragging
-            // object behind the mouse and make it impossible to stop dragging.
-            addEvent(document, "mouseup", dragStop);
-            o = null;
-        }
-    }
-    len = null;
+    addEvent(trigger_obj, "mousedown", dragStart);
+    // The drag stop event is registered globally on the whole document to prevent
+    // problems with too fast mouse movement which might lead to lag the dragging
+    // object behind the mouse and make it impossible to stop dragging.
+    addEvent(document, "mouseup", dragStop);
 }
 
 /**
  * This function is called once an object is picked for dragging
  */
 function dragStart(event) {
-    if(!event)
-        event = window.event;
+    event = event || window.event;
 
-    var target = getTarget(event, 'icon');
+    var target = getTargetByClass(event, 'dragger');
     var button = getButton(event);
 
     // Skip calls when already dragging or other button than left mouse
-    if(draggingObject !== null || button != 'LEFT' || !draggingEnabled)
+    if (draggingObject !== null || button != 'LEFT' || !target || !draggingEnabled)
         return true;
 
-    var posx, posy;
-    if (event.pageX || event.pageY) {
-        posx = event.pageX;
-        posy = event.pageY;
-    } else if (event.clientX || event.clientY) {
-        posx = event.clientX;
-        posy = event.clientY;
-    }
+    contextHide();
 
-    /*if(event.stopPropagation)
-        event.stopPropagation();
-    event.cancelBubble = true;*/
+    var parts = getEventMousePos(event),
+        posx  = parts[0],
+        posy  = parts[1];
 
     draggingObject = target;
-    draggingObject.x = draggingObject.offsetLeft;
-    draggingObject.y = draggingObject.offsetTop;
+    draggingObject.x = rmZoomFactor(pxToInt(draggingObject.style.left), true);
+    draggingObject.y = rmZoomFactor(pxToInt(draggingObject.style.top), true);
 
     // Save relative offset of the mouse
-    dragObjectOffset   = [ posy - draggingObject.offsetTop - getHeaderHeight(),
-                           posx - draggingObject.offsetLeft ];
-    dragObjectStartPos = [ draggingObject.offsetTop, draggingObject.offsetLeft ];
+    dragObjectOffset   = [ posx - draggingObject.x, posy - draggingObject.y ];
+    dragObjectStartPos = [ draggingObject.x, draggingObject.y ];
 
     // Save diff coords of relative objects
     var sLabelName = target.id.replace('box_', 'rel_label_');
     var oLabel = document.getElementById(sLabelName);
     if(oLabel) {
-        dragObjectChilds[sLabelName] = [ oLabel.offsetTop - draggingObject.offsetTop,
-                                         oLabel.offsetLeft - draggingObject.offsetLeft ];
-        oLabel = null;
+        dragObjectChilds[sLabelName] = [ oLabel.offsetLeft - draggingObject.x,
+                                         oLabel.offsetTop - draggingObject.y ];
     }
-    sLabelName = null;
-
-    // Disable the default events for all the different browsers
-    if(event.preventDefault)
-        event.preventDefault();
-    else
-        event.returnValue = false;
-    return true;
+    return preventDefaultEvents(event);
 }
 
 /**
  * This function is called repeated while the object is being dragged
  */
 function dragObject(event) {
-    if(!event)
-        event = window.event;
+    event = event || window.event;
 
-    if(draggingObject === null || !draggingEnabled)
+    if (draggingObject === null || !draggingEnabled)
         return true;
 
-    var posx, posy;
-    if (event.pageX || event.pageY) {
-        posx = event.pageX;
-        posy = event.pageY;
-    } else if (event.clientX || event.clientY) {
-        posx = event.clientX;
-        posy = event.clientY;
-    }
+    var parts = getEventMousePos(event),
+        posx  = parts[0],
+        posy  = parts[1],
+        newLeft = posx - dragObjectOffset[0],
+        newTop  = posy - dragObjectOffset[1];
 
-    var newTop  = posy - dragObjectOffset[0] - getHeaderHeight();
-    var newLeft = posx - dragObjectOffset[1];
+    // skip further handling when moving out of screen
+    if (typeof posx === 'undefined' || typeof posy === undefined)
+        return preventDefaultEvents(event);
 
     draggingObject.style.position = 'absolute';
-    draggingObject.style.top  = newTop + 'px';
-    draggingObject.style.left = newLeft + 'px';
-    draggingObject.x = rmZoomFactor(newLeft);
-    draggingObject.y = rmZoomFactor(newTop);
+    draggingObject.style.left = addZoomFactor(newLeft) + 'px';
+    draggingObject.style.top  = addZoomFactor(newTop) + 'px';
+    draggingObject.x = newLeft;
+    draggingObject.y = newTop;
 
     // When this object has a relative coordinated label, then move this too
     moveRelativeObject(draggingObject.id, newTop, newLeft);
+
+    // Is this object currently relative positioned?
+    var idParts = draggingObject.id.split('-');
+    var obj = g_view.objects[idParts[0]];
+    if (obj.conf.view_type === 'line') {
+        var anchorId = idParts[2];
+        var parents = obj.getParentObjectIds(anchorId);
+    } else {
+        var parents = obj.getParentObjectIds();
+    }
+    var isRel = Object.keys(parents).length > 0;
+
+    // Unhighlight all other objects
+    for(var i in g_view.objects)
+        g_view.objects[i].highlight(false);
+
+
+    // Highlight parents when relative
+    for (var objectId in parents)
+        g_view.objects[objectId].highlight(true);
 
     // With pressed CTRL key the icon should be docked
     // This means the object will be positioned relative to that object
     // This code only highlights that object. When the CTRL key is still pressed
     // when dropping the object the currently moved object will be positioned
     // relative to this object.
+    var msg = null;
     if(event.ctrlKey) {
-        // Unhighlight all other objects
-        for(var i in oMapObjects)
-            oMapObjects[i].highlight(false);
-
         // Find the nearest object to the current position and highlight it
         var o = getNearestObject(draggingObject, newLeft, newTop)
         if(o) {
             o.highlight(true);
             o = null;
         }
+
+        if (!isRel)
+            msg = 'Hold CTRL till drop for relative positioning';
     }
 
-    // Shift key
-    if(event.shiftKey) {
-        // Unhighlight all other objects
-        for(var i in oMapObjects)
-            oMapObjects[i].highlight(false);
+    // Shift key makes the object absolute positioned when still held during dropping
+    else if (event.shiftKey) {
+        // Unhighlight all objects
+        for(var i in g_view.objects)
+            g_view.objects[i].highlight(false);
+
+        if (isRel)
+            msg = 'Hold SHIFT till drop for absolute positioning';
+    } else {
+        if (isRel)
+            msg = 'Press SHIFT for absolute positioning';
+        else
+            msg = 'Press CTRL for relative positioning';
     }
+
+    if (msg !== null)
+        displayStatusMessage(msg, 'notice', true);
 
     // Call the dragging handler when one is set
     if(dragMoveHandlers[draggingObject.id])
-        dragMoveHandlers[draggingObject.id](draggingObject, event);
-    oParent = null;
+        dragMoveHandlers[draggingObject.id](draggingObject,
+                                            dragObjects[draggingObject.id], event);
+    return preventDefaultEvents(event);
 }
 
 /**
@@ -283,8 +414,8 @@ function getNearestObject(draggingObject, x, y) {
     var dist;
 
     var obj;
-    for(var i in oMapObjects) {
-        obj = oMapObjects[i];
+    for(var i in g_view.objects) {
+        obj = g_view.objects[i];
 
         // Skip own object
         if(draggingObject.id.split('-')[0] == obj.conf.object_id)
@@ -321,7 +452,7 @@ function coordsReferTo(obj, target_object_id) {
     if (obj.conf.object_id == target_object_id) {
         return true;
     }
-    
+
     if (isRelativeCoord(obj.conf.x)) {
         var xParent = getMapObjByDomObjId(obj.getCoordParent(obj.conf.x, -1));
         if(coordsReferTo(xParent, target_object_id)) {
@@ -345,8 +476,8 @@ function moveRelativeObject(parentId, parentTop, parentLeft) {
         var oLabel = document.getElementById(sLabelName);
         if(oLabel) {
             oLabel.style.position = 'absolute';
-            oLabel.style.top  = (dragObjectChilds[sLabelName][0] + parentTop) + 'px';
-            oLabel.style.left = (dragObjectChilds[sLabelName][1] + parentLeft) + 'px';
+            oLabel.style.left = (dragObjectChilds[sLabelName][0] + parentLeft) + 'px';
+            oLabel.style.top  = (dragObjectChilds[sLabelName][1] + parentTop) + 'px';
             oLabel = null;
         }
     }
@@ -358,25 +489,27 @@ function dragStop(event) {
        || typeof draggingObject.y == 'undefined' || typeof draggingObject.x == 'undefined')
         return;
 
+    hideStatusMessage();
+
     // When x or y are negative just return this and make no change
     if(draggingObject.y < 0 || draggingObject.x < 0) {
-        draggingObject.style.top  = dragObjectStartPos[0] + 'px';
-        draggingObject.style.left = dragObjectStartPos[1] + 'px';
-        draggingObject.x = dragObjectStartPos[1];
-        draggingObject.y = dragObjectStartPos[0];
+        draggingObject.style.left = dragObjectStartPos[0] + 'px';
+        draggingObject.style.top  = dragObjectStartPos[1] + 'px';
+        draggingObject.x = dragObjectStartPos[0];
+        draggingObject.y = dragObjectStartPos[1];
 
-        moveRelativeObject(draggingObject.id, dragObjectStartPos[0], dragObjectStartPos[1]);
+        moveRelativeObject(draggingObject.id, dragObjectStartPos[1], dragObjectStartPos[0]);
 
         // Call the dragging handler when one is set
         if(dragMoveHandlers[draggingObject.id])
-            dragMoveHandlers[draggingObject.id](draggingObject, event);
+            dragMoveHandlers[draggingObject.id](draggingObject, dragObjects[draggingObject.id], event);
 
         draggingObject = null;
         return;
     }
 
     // Skip when the object has not been moved
-    if(draggingObject.y == dragObjectStartPos[0] && draggingObject.x == dragObjectStartPos[1]) {
+    if(draggingObject.y == dragObjectStartPos[1] && draggingObject.x == dragObjectStartPos[0]) {
         draggingObject = null;
         return;
     }
@@ -395,7 +528,7 @@ function dragStop(event) {
     for(var objectId in getMapObjByDomObjId(draggingObject.id.split('-')[0]).getParentObjectIds())
         getMapObjByDomObjId(objectId).highlight(false);
 
-    dragStopHandlers[draggingObject.id](draggingObject, oParent);
+    dragStopHandlers[draggingObject.id](draggingObject, dragObjects[draggingObject.id], oParent);
 
     oParent = null;
     draggingObject    = null;
@@ -434,40 +567,38 @@ function cloneObject(e, objId) {
 /**
  * Is called once to start the object creation
  */
-function addObject(e, objType, viewType, numLeft, action) {
+function addObject(event, objType, viewType, numLeft, action) {
+    event = event || window.event;
+
     addObjType  = objType;
     addViewType = viewType;
     addNumLeft  = numLeft;
     addAction   = action;
 
-    if(document.body)
-        document.body.style.cursor = 'crosshair';
+    add_class(document.body, 'add');
 
-    var event = !e ? window.event : e;
-    if(event.stopPropagation)
-        event.stopPropagation();
-    event.cancelBubble = true;
-    return false;
+    return preventDefaultEvents(event);
 }
 
-function getEventMousePos(e) {
-    var event = !e ? window.event : e;
+function getEventMousePos(event) {
+    event = event || window.event;
 
     // Only accept "left" mouse clicks
     if(getButton(event) != 'LEFT')
-        return;
+        return null;
 
     // Ignore clicks on the header menu
     if(event.target) {
         var target = event.target;
         while(target) {
             if(target.id && target.id == 'header') {
-                return;
+                return false;
             }
             target = target.parentNode;
         }
     }
 
+    var posx, posy;
     if (event.pageX || event.pageY) {
         posx = event.pageX;
         posy = event.pageY;
@@ -482,17 +613,35 @@ function getEventMousePos(e) {
     // Take the zoom into account. If the map is zoomed this function gathers
     // coordinates where the zoom factor is included. It has to be removed for
     // further processing.
-    posx = rmZoomFactor(posx);
-    posy = rmZoomFactor(posy);
+    posx = rmZoomFactor(posx, true);
+    posy = rmZoomFactor(posy, true);
 
     return [ posx, posy ];
 }
 
+function stopAdding() {
+    remove_class(document.body, 'add');
+    addObjType  = null,
+    addViewType = null,
+    addNumLeft  = null,
+    addAction   = null,
+    addX        = [],
+    addY        = [],
+    addFollow   = false,
+    addShape    = null;
+}
+
 function addClick(e) {
     if(!adding())
-        return;
+        return true;
 
     var pos = getEventMousePos(e);
+    if (pos === false) {
+        // abort adding when clicking on the header
+        stopAdding();
+        return false;
+    }
+
     addX.push(pos[0] - getSidebarWidth());
     addY.push(pos[1]);
     addNumLeft -= 1;
@@ -511,19 +660,20 @@ function addClick(e) {
     }
 
     if(addNumLeft > 0)
-        return;
+        return false;
 
     //
     // If this is reached all object coords have been collected
     //
 
-    if(document.body)
-        document.body.style.cursor = 'default';
-
     if(addObjType == 'textbox' || addObjType == 'container') {
-        var w = addX.pop();
-        var h = addY.pop();
+        var w = addX.pop() - addX[0];
+        var h = addY.pop() - addY[0];
     }
+
+    var parts = g_view.unproject(addX, addY);
+    addX = parts[0];
+    addY = parts[1];
 
     var sUrl = '';
     if(addAction == 'add' || addAction == 'clone')
@@ -541,7 +691,7 @@ function addClick(e) {
         sUrl += '&clone_id=' + cloneId;
 
     if(addObjType == 'textbox' || addObjType == 'container')
-        sUrl += '&w=' + (w - addX[0]) + '&h=' + (h - addY[0]);
+        sUrl += '&w=' + w+ '&h=' + h;
 
     if(sUrl === '')
         return false;
@@ -553,16 +703,8 @@ function addClick(e) {
     }
 
     showFrontendDialog(sUrl, _('Create Object'));
-    sUrl = '';
-
-    addObjType  = null,
-    addViewType = null,
-    addNumLeft  = null,
-    addAction   = null,
-    addX        = [],
-    addY        = [],
-    addFollow   = false,
-    addShape    = null;
+    stopAdding();
+    return false;
 }
 
 function adding() {
@@ -571,222 +713,25 @@ function adding() {
 
 function addFollowing(e) {
     if(!addFollow)
-    return;
+        return true;
 
     var pos = getEventMousePos(e);
+
+    var start_x = addZoomFactor(addX[0]),
+        start_y = addZoomFactor(addY[0]);
+
+    var end_x = addZoomFactor(pos[0]),
+        end_y = addZoomFactor(pos[1]);
 
     addShape.clear();
 
     if(addViewType === 'line' || addObjType === 'line')
-        addShape.drawLine(addX[0], addY[0], pos[0] - getSidebarWidth(), pos[1]);
+        addShape.drawLine(start_x, start_y, end_x - getSidebarWidth(), end_y);
     else
-        addShape.drawRect(addX[0], addY[0], (pos[0] - getSidebarWidth() - addX[0]), (pos[1] - addY[0]));
+        addShape.drawRect(start_x, start_y, (end_x - getSidebarWidth() - start_x),
+                                            (end_y - start_y));
 
     addShape.paint();
-}
-
-/************************************************
- * Register events
- *************************************************/
-
-// First firefox and then the IE
-if (window.addEventListener) {
-  window.addEventListener("mousemove", function(e) {
-    dragObject(e);
-    addFollowing(e);
-    return false;
-  }, false);
-
-  window.addEventListener("click", function(e) {
-    addClick(e);
-    return false;
-  }, false);
-} else {
-  document.documentElement.onmousemove  = function(e) {
-    dragObject(e);
-    addFollowing(e);
-    return false;
-  };
-
-  document.documentElement.onclick = function(e) {
-    addClick(e);
-    // Never return false here! This would prevent open links in IE
-    return true;
-  };
-}
-
-
-
-/******************************************************************************
- * Edit code, moved from WUI
- *****************************************************************************/
-
-/**
- * toggleDependingFields
- *
- * This function shows/hides the fields which depend on the changed field
- *
- * @author	Lars Michelsen <lars@vertical-visions.de>
- */
-function toggleDependingFields(formName, name, value) {
-    var aFields = document.getElementById(formName).elements;
-
-    var oConfig;
-    if(formName == 'edit_config')
-        oConfig = validMainConfig;
-    else
-        oConfig = validMapConfig;
-
-    for(var i = 0, len = aFields.length; i < len; i++) {
-        // Filter helper fields
-        if(aFields[i].name.charAt(0) !== '_') {
-            if(aFields[i].type != 'hidden' && aFields[i].type != 'submit') {
-                // Handle different structures of main cfg and map cfg editing
-                var sMasterName, sTypeName, sOptName, sFieldName;
-                if(formName == 'edit_config') {
-                    sMasterName = name.replace(sTypeName+'_', '');
-                    sTypeName = aFields[i].name.split('_')[0];
-                    sOptName = aFields[i].name.replace(sTypeName+'_', '');
-                    sFieldName = aFields[i].name;
-                } else {
-                    sMasterName = name;
-                    sTypeName = document.getElementById(formName).type.value;
-                    sOptName = aFields[i].name;
-                }
-
-                var sFieldName = aFields[i].name;
-
-                // Show option fields when parent field value is equal and hide when
-                // parent field value differs
-                if(oConfig[sTypeName] && oConfig[sTypeName][sOptName]['depends_on'] === sMasterName
-                     && oConfig[sTypeName][sOptName]['depends_value'] != value) {
-
-                    document.getElementById(sFieldName).parentNode.parentNode.style.display = 'none';
-                    document.getElementById(sFieldName).value = '';
-                } else if(oConfig[sTypeName] && oConfig[sTypeName][sOptName]['depends_on'] === sMasterName
-                     && oConfig[sTypeName][sOptName]['depends_value'] == value) {
-
-                    document.getElementById(sFieldName).parentNode.parentNode.style.display = '';
-
-                    // Toggle the value of the field. If empty or just switched the function will
-                    // try to display the default value
-                    toggleDefaultOption(sFieldName);
-                } else if(!oConfig[sTypeName]) {
-                    alert('No data for type: '+sTypeName);
-                }
-
-            }
-        }
-    }
-
-    oConfig = null;
-    aFields = null;
-}
-
-/**
- * toggleFieldType
- *
- * Changes the field type from select to input and vice versa
- *
- * @author	Lars Michelsen <lars@vertical-visions.de>
- */
-function toggleFieldType(sName, sValue) {
-    var bReturn = false;
-    var sBaseName;
-    var bInputHelper = false;
-
-    if(sName.indexOf('_inp_') !== -1) {
-        sBaseName = sName.replace('_inp_', '');
-        bInputHelper = true;
-    } else {
-        sBaseName = sName;
-    }
-
-    // Check if the field should be changed
-    // this is toggled on
-    // - Input helper field set to ""
-    if(bInputHelper === true && sValue == '') {
-        var oSelectField = document.getElementById(sBaseName);
-        var oInputField = document.getElementById('_inp_' + sBaseName);
-
-        if(bInputHelper == false) {
-            oSelectField.parentNode.parentNode.style.display = 'none';
-            oInputField.parentNode.parentNode.style.display = '';
-        } else {
-            oSelectField.parentNode.parentNode.style.display = '';
-            oInputField.parentNode.parentNode.style.display = 'none';
-        }
-
-        oInputField = null;
-        oSelectField = null;
-
-        bReturn = true;
-    }
-
-    return bReturn;
-}
-
-/**
- * toggleDefaultOption
- *
- * This function checks the value of the field to reset it to the default value
- * which is stored in a "helper field". The default value is inserted when there
- * is no option given in the current object.
- *
- * @author	Lars Michelsen <lars@vertical-visions.de>
- */
-function toggleDefaultOption(sName, bOverrideCurrentValue) {
-    var oField = document.getElementById(sName);
-    var oFieldDefault = document.getElementById('_'+sName);
-
-    if(typeof bOverrideCurrentValue === 'undefined') {
-        bOverrideCurrentValue = false;
-    }
-
-    if(oField && oFieldDefault) {
-        // Set option only when the field is emtpy and the default value has a value
-        // Added override flag to ignore the current value
-        if((bOverrideCurrentValue === true || (bOverrideCurrentValue === false && oField.value === '')) && oFieldDefault.value !== '') {
-            // Set value to default value
-            oField.value = oFieldDefault.value;
-
-            // Visualize the default value
-            oField.style.color = '#B0A8B8';
-        } else if(oField.value != oFieldDefault.value) {
-            // Reset the visualisation
-            oField.style.color = '';
-        } else if(oField.value == oFieldDefault.value) {
-            // Visualize the default value
-            oField.style.color = '#B0A8B8';
-        }
-    }
-
-    oFieldDefault = null;
-    oField = null;
-}
-
-/**
- * validateValue(oField)
- *
- * This function checks a string for valid format. The check is done by the
- * given regex.
- *
- * @author	Lars Michelsen <lars@vertical-visions.de>
- */
-function validateValue(sName, sValue, sRegex) {
-    // Remove PHP delimiters
-    sRegex = sRegex.replace(/^\//, "");
-    sRegex = sRegex.replace(/\/[iugm]*$/, "");
-
-    // Match the current value
-    var regex = new RegExp(sRegex, "i");
-    var match = regex.exec(sValue);
-    if(sValue == '' || match != null) {
-        return true;
-    } else {
-        alert(printLang(lang['wrongValueFormatOption'],'ATTRIBUTE~'+sName));
-        return false;
-    }
 }
 
 function useGrid() {
@@ -795,67 +740,66 @@ function useGrid() {
 
 /**
  * Parses a grind to make the alignment of the icons easier
- *
- * @author  Lars Michelsen <lars@vertical-visions.de>
  */
 function gridParse() {
     // Only show when user configured to see a grid
-    if(useGrid()) {
-        // Create grid container and append to map
+    if (!useGrid())
+        return;
+
+    // Create grid container and append to map
+    var oGrid = document.getElementById('grid');
+    if (!oGrid) {
         var oGrid = document.createElement('div');
         oGrid.setAttribute('id', 'grid');
         document.getElementById('map').appendChild(oGrid);
-        oGrid = null;
-
-        // Add an options: grid_show, grid_steps, grid_color
-        var grid = new jsGraphics('grid');
-        grid.setColor(oViewProperties.grid_color);
-        grid.setStroke(1);
-
-        var gridStep = addZoomFactor(oViewProperties.grid_steps);
-
-        // Start
-        var gridYStart = 0;
-        var gridXStart = 0;
-
-        // End: Get screen height, width
-        var gridYEnd = pageHeight() - getHeaderHeight();
-        var gridXEnd = pageWidth();
-
-        // Draw vertical lines
-        for(var gridX = gridStep; gridX < gridXEnd; gridX = gridX + gridStep) {
-            grid.drawLine(gridX, gridYStart, gridX, gridYEnd);
-        }
-        // Draw horizontal lines
-        for(var gridY = gridStep; gridY < gridYEnd; gridY = gridY + gridStep) {
-            grid.drawLine(gridXStart, gridY, gridXEnd, gridY);
-        }
-
-        grid.paint();
-
-        gridXEnd = null
-        gridYEnd = null;
-        gridXStart = null;
-        gridYStart = null;
-        gridStep = null;
-        grid = null;
-
-        addEvent(window, "resize", gridRedraw);
     }
+    else {
+        while (oGrid.firstChild) {
+            oGrid.removeChild(oGrid.firstChild);
+        }
+    }
+
+    // Add options: grid_show, grid_steps, grid_color
+    var line = document.createElement('div');
+    line.style.backgroundColor = oViewProperties.grid_color;
+
+    var gridStep = addZoomFactor(oViewProperties.grid_steps);
+    var gridYStart = 0;
+    var gridXStart = 0;
+    var gridYEnd = pageHeight() - getHeaderHeight();
+    var gridXEnd = pageWidth();
+
+    var vline = null;
+    for(var gridX = gridStep; gridX < gridXEnd; gridX = gridX + gridStep) {
+        vline = line.cloneNode();
+        vline.className = "vertical";
+        vline.style.left   = gridX + 'px';
+        vline.style.top    = gridYStart + 'px';
+        vline.style.bottom = 0;
+        oGrid.appendChild(vline);
+    }
+
+    var hline;
+    for(var gridY = gridStep; gridY < gridYEnd; gridY = gridY + gridStep) {
+        hline = line.cloneNode();
+        hline.className = "horizontal";
+        hline.style.top    = gridY +'px';
+        hline.style.left   = gridXStart + 'px';
+        hline.style.right  = 0;
+        oGrid.appendChild(hline);
+    }
+
+    addEvent(window, "resize", gridRedraw);
+    addEvent(window, "scroll", gridRedraw);
 }
 
 function gridRemove() {
-    var oMap = document.getElementById('map');
-    if(oMap) {
-        var oGrid = document.getElementById('grid')
-        if(oGrid) {
-            oMap.removeChild(oGrid);
-            oGrid = null;
-        }
-        oMap = null;
-    }
+    var oGrid = document.getElementById('grid');
+    if (oGrid)
+        oGrid.parentNode.removeChild(oGrid);
 
     removeEvent(window, "resize", gridRedraw);
+    removeEvent(window, "scroll", gridRedraw);
 }
 
 function gridRedraw() {
@@ -866,8 +810,6 @@ function gridRedraw() {
 /**
  * Toggle the grid state in the current view and sends
  * current setting to server component for persistance
- *
- * @author  Lars Michelsen <lars@vertical-visions.de>
  */
 function gridToggle() {
     // Toggle the grid state
@@ -879,17 +821,9 @@ function gridToggle() {
         gridParse();
     }
 
-    // Send current option to server component
-    var url = oGeneralProperties.path_server+'?mod=Map&act=modifyObject&map='
-              + oPageProperties.map_name+'&type=global&id=0&grid_show='+oViewProperties.grid_show;
-
-    // Sync ajax request
-    var oResult = getSyncRequest(url);
-    if(oResult && oResult.status != 'OK') {
-        alert(oResult.message);
-    }
-
-    oResult = null;
+    // Send current option to server for persistance
+    call_ajax(oGeneralProperties.path_server+'?mod=Map&act=modifyObject&map='
+              + oPageProperties.map_name+'&type=global&id=0&grid_show='+oViewProperties.grid_show);
 }
 
 /**
@@ -915,80 +849,26 @@ function coordsToGrid(x, y) {
     }
 }
 
-/**
- * validateMainConfigFieldValue(oField)
- *
- * This function checks a config field value for valid format. The check is done
- * by the match regex from validMainConfig array.
- *
- * @author	Lars Michelsen <lars@vertical-visions.de>
- */
-function validateMainConfigFieldValue(oField, init) {
-    var sName;
-    var bInputHelper = false;
-    var bChanged;
-
-    if(!oField)
-        return false;
-
-    if(oField.name.indexOf('_inp_') !== -1) {
-        sName = oField.name.replace('_inp_', '');
-        bInputHelper = true;
-    } else {
-        sName = oField.name;
+function toggle_section(sec) {
+    var sections = document.getElementsByClassName('section');
+    for (var i = 0; i < sections.length; i++) {
+        if (sections[i].id == 'sec_' + sec)
+            sections[i].style.display = '';
+        else
+            sections[i].style.display = 'none';
     }
 
-    // Check if "manual input" was selected in this field. If so: change the field
-    // type from select to input
-    bChanged = toggleFieldType(oField.name, oField.value);
-
-    // Toggle the value of the field. If empty or just switched the function will
-    // try to display the default value
-    toggleDefaultOption(sName, bChanged);
-
-    // Check if some fields depend on this. If so: Add a javacript
-    // event handler function to toggle these fields
-    toggleDependingFields("edit_config", sName, oField.value);
-
-    // Only validate when field type not changed
-    if(!bChanged) {
-        // Only validate when not initial parsing
-        if(!init) {
-        		var aName = sName.split('_');
-                        var sSec  = aName.shift();
-            return validateValue(sName, oField.value, validMainConfig[sSec][aName.join('_')].match);
-        } else {
-            return true;
-        }
-    } else {
-        return false;
-    }
-}
-
-function printLang(sLang, sReplace) {
-    if(typeof sLang === 'undefined')
-        return '';
-
-    sLang = sLang.replace(/<(\/|)(i|b)>/ig, '');
-    sLang = sLang.replace('&auml;', 'ä').replace('&uuml;', 'ü');
-    sLang = sLang.replace('&ouml;', 'ö').replace('&szlig;', '');
-
-    // sReplace maybe optional
-    if(typeof sReplace != "undefined") {
-        aReplace = sReplace.split(",");
-        for(var i = 0; i < aReplace.length; i++) {
-            var aReplaceSplit = aReplace[i].split("~");
-            sLang = sLang.replace("["+aReplaceSplit[0]+"]",aReplaceSplit[1]);
-        }
+    // update the navigation
+    var nav_items = document.getElementById('nav').childNodes;
+    for (var i = 0; i < nav_items.length; i++) {
+        if (nav_items[i].id == 'nav_' + sec)
+            add_class(nav_items[i], 'active');
+        else
+            remove_class(nav_items[i], 'active');
     }
 
-    return sLang;
-}
-
-// checks that the file the user wants to upload has a valid extension
-function checkPngGifOrJpg(imageName) {
-    var type = imageName.substring(imageName.length-3,imageName.length).toLowerCase();
-    return type == 'png' || type == 'jpg' || type == 'gif';
+    // update the helper field value
+    document.getElementById('sec').value = sec;
 }
 
 // Toggles the state of an option (Showing inherited value or the current configured value)
@@ -1009,7 +889,7 @@ function toggle_option(name) {
     }
 }
 
-function togglePicker(id) {
+function togglePicker(id, state) {
     var o = document.getElementById(id);
     if(jscolor.picker && jscolor.picker.owner == o.color)
         o.color.hidePicker();
@@ -1027,3 +907,62 @@ function pickWindowSize(id, dimension) {
     }
     o = null;
 }
+
+function updateUserRoles(bAdd) {
+    var user_roles = document.getElementById('user_roles');
+    var available  = document.getElementById('roles_available');
+    var selected   = document.getElementById('roles_selected');
+    if (bAdd) {
+        var source = available;
+        var target = selected;
+    } else {
+        var source = selected;
+        var target = available;
+    }
+
+    // Quit when no source selected
+    if (source.selectedIndex === -1)
+        return false;
+
+    // Save strings
+    var optName  = source.options[source.selectedIndex].text;
+    var optValue = source.options[source.selectedIndex].value;
+
+    // Move from source to target
+    source.options.remove(source.selectedIndex);
+    target.options[target.options.length] = new Option(optName, optValue, false, false);
+
+    // now update the internal helper field with the selected options
+    var selected_values = [];
+    for(var i = 0; i < selected.options.length; i++) {
+        selected_values.push(selected.options[i].value);
+    }
+    user_roles.value = selected_values.join(',');
+}
+
+function addOption(form) {
+    var field = form.num_options;
+    field.value = parseInt(field.value) + 1;
+    updateForm(form);
+}
+
+// Removes an element from the map
+function removeMapObject(event, object_id) {
+    event = event || window.event;
+    g_view.removeObject(object_id);
+    return preventDefaultEvents(event);
+}
+
+/************************************************
+ * Register events
+ *************************************************/
+
+addEvent(document, 'mousemove', function(event) {
+    return resizeMouseMove(event)
+            && dragObject(event)
+            && addFollowing(event);
+});
+
+addEvent(document, 'click', function(event) {
+    return addClick(event);
+});

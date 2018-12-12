@@ -3,7 +3,7 @@
  * NagVisLine.js - This class handles the visualisation of stateless line
  *                 objects in the NagVis js frontend
  *
- * Copyright (c) 2004-2011 NagVis Project (Contact: info@nagvis.org)
+ * Copyright (c) 2004-2016 NagVis Project (Contact: info@nagvis.org)
  *
  * License:
  *
@@ -22,127 +22,24 @@
  *
  *****************************************************************************/
 
-/**
- * @author	Lars Michelsen <lars@vertical-visions.de>
- */
-
-
 var NagVisLine = NagVisStatelessObject.extend({
     constructor: function(oConf) {
         // Call parent constructor;
         this.base(oConf);
     },
 
-    /**
-     * PUBLIC parse()
-     *
-     * Parses the object
-     *
-     * @return	String		HTML code of the object
-     * @author	Lars Michelsen <lars@vertical-visions.de>
-     */
-    parse: function () {
-        var oContainerDiv;
+    update: function() {
+        this.clearElements();
 
-        // Create container div
-        oContainerDiv = document.createElement('div');
-        oContainerDiv.setAttribute('id', this.conf.object_id);
+        var line = new ElementLine(this).addTo(this);
 
-        var oLine = this.parseLine();
-        oContainerDiv.appendChild(oLine);
-        oShape = null;
+        // Apply line color configurations
+        line.calcColors = function(obj) {
+            return function() {
+                return [obj.conf.line_color, obj.conf.line_color_border];
+            };
+        }(this);
 
-        // Append child to map and save reference in parsedObject
-        var oMap = document.getElementById('map');
-        if(oMap) {
-            this.parsedObject = oMap.appendChild(oContainerDiv);
-            oMap = null;
-        }
-        oContainerDiv = null;
-
-        this.drawLine();
-
-        // Enable the controls when the object is not locked
-        if(!this.bIsLocked) {
-            this.parseControls();
-	    if(typeof(this.unlockLabel) == 'function')
-	        this.unlockLabel();
-            this.toggleObjectActions(this.bIsLocked);
-        }
+        this.base();
     },
-
-    /**
-     * Parses the HTML-Code of a line
-     *
-     * @return	String		HTML code
-     * @author	Lars Michelsen <lars@vertical-visions.de>
-     */
-    parseLine: function () {
-        var ret = '';
-        var link = '';
-
-        // Create container div
-        var oContainerDiv = document.createElement('div');
-        oContainerDiv.setAttribute('id', this.conf.object_id+'-linediv');
-
-        // Create line div
-        var oLineDiv = document.createElement('div');
-        oLineDiv.setAttribute('id', this.conf.object_id+'-line');
-        oLineDiv.style.zIndex = this.conf.z;
-
-        oContainerDiv.appendChild(oLineDiv);
-        oLineDiv = null;
-
-        // Parse hover/link area only when needed
-        this.parseLineHoverArea(oContainerDiv);
-
-        return oContainerDiv;
-    },
-
-    /**
-     * Draws the NagVis lines on the already added divs.
-     *
-     * @return	String		HTML code
-     * @author	Lars Michelsen <lars@vertical-visions.de>
-     * FIXME: Eliminate duplicate code with NagVisStatefulObject
-     */
-    drawLine: function() {
-        var x = this.parseCoords(this.conf.x, 'x');
-        var y = this.parseCoords(this.conf.y, 'y');
-
-        var width = addZoomFactor(this.conf.line_width);
-        if(width <= 0)
-            width = 1; // minimal width for lines
-
-        var colorFill = this.conf.line_color;
-        var colorBorder = this.conf.line_color_border;
-
-        // Cuts
-        var cuts = [this.conf.line_cut, this.conf.line_label_pos_in, this.conf.line_label_pos_out];
-
-        // Parse the line object
-        drawNagVisLine(this.conf.object_id, this.conf.line_type, cuts, x, y,
-                       this.conf.z, width, colorFill, null, null, colorBorder,
-                       this.needsLineHoverArea(),
-                       (this.conf.line_label_show && this.conf.line_label_show === '1'),
-                       parseInt(this.conf.line_label_y_offset));
-    },
-
-    remove: function () {
-        if(!this.parsedObject)
-            return
-
-        var oMap = document.getElementById('map');
-        if(oMap)
-            oMap.removeChild(this.parsedObject);
-
-        // Remove object reference
-        this.parsedObject = null;
-
-        oMap = null;
-    },
-
-    parseHoverMenu: function () {
-        this.getHoverMenu(this.conf.object_id+'-linelink');
-    }
 });
