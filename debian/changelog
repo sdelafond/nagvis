@@ -1,12 +1,12 @@
 nagvis (1:1.9.10-1) unstable; urgency=medium
 
-  [ Bas Couwenberg ]
   * Team upload.
+  
+  [ Bas Couwenberg ]
   * Update watch file for move to GitHub.
   * Bump Standards-Version to 4.2.1, no changes.
 
   [ Sebastien Delafond ]
-  * NMU
   * Imported Debian patch 1:1.7.10+dfsg1-3.2
   * Update php-gettext link
   * Add Files-Excluded to debian/copyright, even though those files are
