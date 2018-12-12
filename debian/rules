@@ -19,7 +19,7 @@ override_dh_install:
 	# /usr/share/nagvis/share
 	rm -rf debian/nagvis/usr/share/nagvis/share/userfiles/
 	# We use the external php-gettext lib to avoid copy copies
-	rm -rf debian/nagvis/usr/share/nagvis/share/server/core/ext/php-gettext-1.0.9
+	rm -rf debian/nagvis/usr/share/nagvis/share/server/core/ext/php-gettext-1.0.12
 	# Fixing some lintian issues
 	rm -f debian/nagvis/usr/share/nagvis/share/frontend/nagvis-js/ext/dwoo-1.1.0/LICENSE
 	find debian/nagvis/ -name ".gitignore" -delete
