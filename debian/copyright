@@ -1,6 +1,7 @@
 Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: NagVis
 Source: http://sourceforge.net/projects/nagvis/files/
+Files-Excluded: uifx share/netmap/shell.html share/netmap/shell.swf share/netmap/modules/gmap
 
 Files: *
 Copyright: Copyright 2007-2013, Lars Michelsen <lars@vertical-visions.de>
