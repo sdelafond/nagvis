@@ -3,7 +3,7 @@
  *
  * index.php - Main page of NagVis
  *
- * Copyright (c) 2004-2011 NagVis Project (Contact: info@nagvis.org)
+ * Copyright (c) 2004-2016 NagVis Project (Contact: info@nagvis.org)
  *
  * License:
  *
@@ -30,11 +30,8 @@ require('../../server/core/defines/matches.php');
 require('defines/nagvis-js.php');
 
 // Include functions
-require('../../server/core/functions/autoload.php');
-require('../../server/core/functions/debug.php');
-require('../../server/core/functions/oldPhpVersionFixes.php');
 require('../../server/core/classes/CoreExceptions.php');
-require('../../server/core/functions/nagvisErrorHandler.php');
+require('../../server/core/functions/autoload.php');
 
 if (PROFILE) profilingStart();
 
@@ -42,7 +39,6 @@ define('CONST_AJAX' , FALSE);
 
 try {
     require('../../server/core/functions/core.php');
-    $CORE     = GlobalCore::getInstance();
     $MHANDLER = new FrontendModuleHandler();
     $_name    = 'nagvis-js';
     $_modules = Array(
@@ -57,7 +53,12 @@ try {
     require('../../server/core/functions/index.php');
     exit(0);
 } catch(NagVisException $e) {
-    echo new FrontendMessage($e->getMessage());
+    $VIEW = new ViewError();
+
+    if (isset($MODULE) && is_a($MODULE, "FrontendModMap"))
+        echo $VIEW->parseWithMap($e, $MODULE->getObject());
+    else
+        echo $VIEW->parse($e);
 }
 
 ?>

@@ -4,7 +4,7 @@
  * GlobalBackendnagiosbp.php - backend class for connecting NagVis directly
  *                             to NagiosBP using the NagiosBP JSON webservice.
  *
- * Copyright (c) 2004-2011 NagVis Project (Contact: info@nagvis.org)
+ * Copyright (c) 2004-2016 NagVis Project (Contact: info@nagvis.org)
  *
  * License:
  *
@@ -72,7 +72,7 @@ class GlobalBackendnagiosbp implements GlobalBackendInterface {
     /**
      * Basic initialization happens here
      */
-    public function __construct($CORE, $backendId) {
+    public function __construct($backendId) {
         $this->backendId = $backendId;
 
         $this->baseUrl = cfg('backend_'.$backendId, 'base_url');
@@ -121,7 +121,7 @@ class GlobalBackendnagiosbp implements GlobalBackendInterface {
         $s = @file_get_contents($url, false, $this->context);
         if($s === false)
             throw new BackendConnectionProblem(l('Unable to fetch data from URL [U]: [M]',
-                                                Array('U' => $url, 'M' => "".error_get_last())));
+                                                Array('U' => $url, 'M' => json_encode(error_get_last()))));
 
         //DEBUG:
         //$fh = fopen('/tmp/bp', 'a');
@@ -174,31 +174,35 @@ class GlobalBackendnagiosbp implements GlobalBackendInterface {
 
     private function getBPState($state) {
         if($state == null)
-            $state = 'UNKNOWN';
-        return $state;
+            return UNKNOWN;
+        return state_num($state);
     }
 
     private function getBPCounts($bp) {
         $c = Array(
-            'PENDING' => Array(
+            PENDING => Array(
                 'normal'   => 0,
             ),
-            'OK' => Array(
+            OK => Array(
                 'normal'   => 0,
+                'stale'    => 0,
                 'downtime' => 0,
             ),
-            'WARNING' => Array(
+            WARNING => Array(
                 'normal'   => 0,
+                'stale'    => 0,
                 'ack'      => 0,
                 'downtime' => 0,
             ),
-            'CRITICAL' => Array(
+            CRITICAL => Array(
                 'normal'   => 0,
+                'stale'    => 0,
                 'ack'      => 0,
                 'downtime' => 0,
             ),
-            'UNKNOWN' => Array(
+            UNKNOWN => Array(
                 'normal'   => 0,
+                'stale'    => 0,
                 'ack'      => 0,
                 'downtime' => 0,
             ),
@@ -254,20 +258,22 @@ class GlobalBackendnagiosbp implements GlobalBackendInterface {
 
             $ret[$key] = Array(
                 'details' => Array(
-                    'alias'         => $bp['display_name'],
+                    ALIAS => $bp['display_name'],
                     // This forces the BP state to be the summary state of the BP object
-                    'summary_state' => $this->getBPState($bp['hardstate']),
+                    STATE => $this->getBPState($bp['hardstate']),
                 ),
                 'counts'  => $this->getBPCounts($bp),
             );
 
             // Add optional outputs which replaces the NagVis summary_output
             if(isset($bp['external_info']))
-                $ret[$key]['summary_output'] = $bp['external_info'];
+                $ret[$key]['output'] = $bp['external_info'];
 
             // Forces the URL to point to nagios-bp if the current url does not point to a map
             if(strpos($OBJS[0]->getUrl(), 'show=') === false)
-                $ret[$key]['details']['url'] = $this->bpUrl($key);
+                $ret[$key]['attrs'] = array(
+                    'url' => $this->bpUrl($key),
+                );
         }
 
         return $ret;
@@ -308,23 +314,69 @@ class GlobalBackendnagiosbp implements GlobalBackendInterface {
             foreach($bp['components'] AS $comp) {
                 if(isset($comp['service'])) {
                     // Service
-                    $ret[$key][] = Array(
-                        'host_name'           => $comp['host'],
-                        'service_description' => $comp['service'],
-                        'state'               => $this->getBPState($comp['hardstate']),
-                        'output'              => '',
+                    //$ret[$key][] = Array(
+                    //    STATE => $this->getBPState($comp['hardstate']),
+                    //    OUTPUT => '',
+                    //    ALIAS => $comp['host'],
+                    //    DESCRIPTION => $comp['service'],
+                    //);
+                    $ret[$key][] = array(
+                        $this->getBPState($comp['hardstate']),
+                        '',  // output
+                        0,
+                        0,
+                        1,  // state type
+                        1, // current attempt
+                        1, // max check attempts
+                        null,  // last check
+                        null,  // next check
+                        null, // last hard state change
+                        null, // last state change
+                        '', // perfdata
+                        $comp['service'],  // display name
+                        $comp['service'],  // alias
+                        '',  // address
+                        '',  // notes
+                        '', // check command
+                        null,
+                        null, // dt author
+                        null, // dt data
+                        null, // dt start
+                        null, // dt end
+                        0, // staleness
+                        $comp['service'] // descr
                     );
                 } else {
                     // BP
-                    $childBP = Array(
-                        'host_name'           => $comp['subprocess'],
-                        'service_description' => $comp['display_name'],
-                        'state'               => $this->getBPState($comp['hardstate']),
-                        'output'              => '',
+                    $childBP = array(
+                        $this->getBPState($comp['hardstate']),
+                        '',  // output
+                        0,
+                        0,
+                        1,  // state type
+                        1, // current attempt
+                        1, // max check attempts
+                        null,  // last check
+                        null,  // next check
+                        null, // last hard state change
+                        null, // last state change
+                        '', // perfdata
+                        $comp['display_name'],  // display name
+                        $comp['display_name'],  // alias
+                        '',  // address
+                        '',  // notes
+                        '', // check command
+                        null,
+                        null, // dt author
+                        null, // dt data
+                        null, // dt start
+                        null, // dt end
+                        0, // staleness
+                        $comp['display_name'] // descr
                     );
 
                     if(isset($bps[$comp['subprocess']]['external_info']))
-                        $childBP['output'] = $bps[$comp['subprocess']]['external_info'];
+                        $childBP[OUTPUT] = $bps[$comp['subprocess']]['external_info'];
 
                     $ret[$key][] = $childBP;
                 }
@@ -350,7 +402,7 @@ class GlobalBackendnagiosbp implements GlobalBackendInterface {
         return Array();
     }
 
-    public function getHostStateCounts($objects, $options, $filters) {
+    public function getHostMemberCounts($objects, $options, $filters) {
         return Array();
     }
 

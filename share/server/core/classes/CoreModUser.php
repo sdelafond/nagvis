@@ -3,7 +3,7 @@
  *
  * CoreModUser.php - Manages user defined options
  *
- * Copyright (c) 2004-2011 NagVis Project (Contact: info@nagvis.org)
+ * Copyright (c) 2004-2016 NagVis Project (Contact: info@nagvis.org)
  *
  * License:
  *
@@ -23,7 +23,7 @@
  *****************************************************************************/
 
 /**
- * @author  Lars Michelsen <lars@vertical-visions.de>
+ * @author  Lars Michelsen <lm@larsmichelsen.com>
  */
 class CoreModUser extends CoreModule {
     protected $CORE;
@@ -66,7 +66,13 @@ class CoreModUser extends CoreModule {
     protected function handleResponseSet() {
         $FHANDLER = new CoreRequestHandler($_GET);
         $this->verifyValuesSet($FHANDLER, Array('opts'));
-        return Array('opts' => $FHANDLER->get('opts'));
+        $opts = $FHANDLER->get('opts');
+
+        foreach($opts as $key => $val)
+            if (substr($val, 0, 1) == '{')
+                $opts[$key] = json_decode($val);
+
+        return Array('opts' => $opts);
     }
 }
 ?>

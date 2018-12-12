@@ -3,7 +3,7 @@
  *
  * CoreUserCfg.php - Class for handling user/profile specific configurations
  *
- * Copyright (c) 2004-2011 NagVis Project (Contact: info@nagvis.org)
+ * Copyright (c) 2004-2016 NagVis Project (Contact: info@nagvis.org)
  *
  * License:
  *
@@ -23,10 +23,9 @@
  *****************************************************************************/
 
 /**
- * @author	Lars Michelsen <lars@vertical-visions.de>
+ * @author	Lars Michelsen <lm@larsmichelsen.com>
  */
 class CoreUserCfg {
-    private $CORE;
     private $profilesDir;
 
     // Optional list of value types to be fixed
@@ -36,21 +35,14 @@ class CoreUserCfg {
       'eventlog' => 'b',
     );
 
-    /**
-     * Class Constructor
-     *
-     * @param	String			$name		Name of the map
-     * @author	Lars Michelsen <lars@vertical-visions.de>
-     */
     public function __construct() {
-        $this->CORE = GlobalCore::getInstance();
         $this->profilesDir = cfg('paths', 'profiles');
     }
 
     public function doGet($onlyUserCfg = false) {
         global $AUTH, $AUTHORISATION;
         $opts = Array();
-        if(!$AUTH->isAuthenticated())
+        if(!isset($AUTH) || !$AUTH->isAuthenticated())
             return $opts;
 
         if(!file_exists($this->profilesDir))
@@ -58,7 +50,7 @@ class CoreUserCfg {
 
         // Fetch all profile files to load
         $files = Array();
-        if(!$onlyUserCfg)
+        if(!$onlyUserCfg && isset($AUTHORISATION))
             foreach($AUTHORISATION->getUserRoles($AUTH->getUserId()) AS $role)
                 $files[] = $role['name'].'.profile';
         $files[] = $AUTH->getUser().'.profile';
@@ -84,10 +76,10 @@ class CoreUserCfg {
     }
 
     public function doSet($opts) {
-        global $AUTH;
+        global $CORE, $AUTH;
         $file = $this->profilesDir.'/'.$AUTH->getUser().'.profile';
 
-        if(!$this->CORE->checkExisting(dirname($file), true) || !$this->CORE->checkWriteable(dirname($file), true))
+        if(!$CORE->checkExisting(dirname($file), true) || !$CORE->checkWriteable(dirname($file), true))
             return false;
 
         $cfg = $this->doGet(true);
@@ -99,7 +91,7 @@ class CoreUserCfg {
         }
 
         $ret = file_put_contents($file, json_encode($cfg)) !== false;
-        $this->CORE->setPerms($file);
+        $CORE->setPerms($file);
         return $ret;
     }
 

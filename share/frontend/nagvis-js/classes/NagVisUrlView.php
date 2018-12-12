@@ -3,7 +3,7 @@
  *
  * NagVisUrlView.php - Class for parsing the NagVis urls in nagvis-js frontend
  *
- * Copyright (c) 2004-2011 NagVis Project (Contact: info@nagvis.org)
+ * Copyright (c) 2004-2016 NagVis Project (Contact: info@nagvis.org)
  *
  * License:
  *
@@ -23,10 +23,9 @@
  *****************************************************************************/
 
 /**
- * @author	Lars Michelsen <lars@vertical-visions.de>
+ * @author	Lars Michelsen <lm@larsmichelsen.com>
  */
 class NagVisUrlView {
-    private $CORE = null;
     private $url = '';
     private $content = '';
     private $aRotation = Array();
@@ -34,19 +33,17 @@ class NagVisUrlView {
     /**
      * Class Constructor
      *
-     * @param    GlobalCore      $CORE
      * @param    String          $NAME
-     * @author 	Lars Michelsen <lars@vertical-visions.de>
+     * @author 	Lars Michelsen <lm@larsmichelsen.com>
      */
     public function __construct(GlobalCore $CORE, $url) {
-        $this->CORE = $CORE;
         $this->url = $url;
     }
 
     /**
      * Set the page content
      *
-     * @author  Lars Michelsen <lars@vertical-visions.de>
+     * @author  Lars Michelsen <lm@larsmichelsen.com>
      */
     public function setContent($s) {
         $this->content = $s;
@@ -56,30 +53,47 @@ class NagVisUrlView {
      * Set the rotation properties if the user wants a rotation
      *
      * @param   Array
-     * @author  Lars Michelsen <lars@vertical-visions.de>
+     * @author  Lars Michelsen <lm@larsmichelsen.com>
      */
     public function setRotation($a) {
         $this->aRotation = $a;
+    }
+
+    private function getProperties() {
+        return array(
+            'url'       => $this->url,
+            'view_type' => 'url',
+        );
     }
 
     /**
      * Parses the url and the objects for the nagvis-js frontend
      *
      * @return	String 	String with JS Code
-     * @author 	Lars Michelsen <lars@vertical-visions.de>
+     * @author 	Lars Michelsen <lm@larsmichelsen.com>
      */
     public function parse() {
+        global $_MAINCFG;
         // Initialize template system
-        $TMPL = New FrontendTemplateSystem($this->CORE);
+        $TMPL = New FrontendTemplateSystem();
         $TMPLSYS = $TMPL->getTmplSys();
 
+        $iframe = false;
+        $url = $this->url;
+        if (strpos($this->url, 'iframe:') === 0) {
+            $iframe = true;
+            $url = substr($this->url, 7);
+        }
+
         $aData = Array(
-            'generalProperties'  => $this->CORE->getMainCfg()->parseGeneralProperties(),
-            'workerProperties'   => $this->CORE->getMainCfg()->parseWorkerProperties(),
+            'generalProperties'  => $_MAINCFG->parseGeneralProperties(),
+            'workerProperties'   => $_MAINCFG->parseWorkerProperties(),
             'rotationProperties' => json_encode($this->aRotation),
-            'url'                => $this->url,
+            'pageProperties'     => json_encode($this->getProperties()),
+            'iframe'             => $iframe,
+            'url'                => $url,
             'fileAges'           => json_encode(Array(
-                'maincfg' => $this->CORE->getMainCfg()->getConfigFileAge(),
+                'maincfg' => $_MAINCFG->getConfigFileAge(),
             )),
             'locales'            => json_encode(Array()),
         );

@@ -15,11 +15,7 @@ $filter_processed = false;
 
 // options to be modyfiable by the user(url)
 global $viewParams;
-$viewParams = array(
-    '*' => array(
-        'filter_group',
-    )
-);
+$viewParams = array();
 
 // Config variables to be registered for this source
 global $configVars;
@@ -31,6 +27,16 @@ $configVars = array(
         'field_type' => 'dropdown',
         'list'       => 'listHostgroupNames',
     )
+);
+
+// Assign config variables to specific object types
+global $configVarMap;
+$configVarMap = array(
+    'global' => array(
+        'general' => array(
+            'filter_group'  => null,
+        ),
+    ),
 );
 
 /**
@@ -47,10 +53,10 @@ function filter_hostgroup(&$map_config, $p) {
 
     // Initialize the backend
     global $_BACKEND;
-    $_BACKEND->checkBackendExists($p['backend_id'], true);
-    $_BACKEND->checkBackendFeature($p['backend_id'], 'getHostNamesInHostgroup', true);
+    $_BACKEND->checkBackendExists($p['backend_id'][0], true);
+    $_BACKEND->checkBackendFeature($p['backend_id'][0], 'getHostNamesInHostgroup', true);
 
-    $hosts = $_BACKEND->getBackend($p['backend_id'])->getHostNamesInHostgroup($p['filter_group']);
+    $hosts = $_BACKEND->getBackend($p['backend_id'][0])->getHostNamesInHostgroup($p['filter_group']);
 
     // Remove all hosts not found in the hostgroup
     $hosts = array_flip($hosts);
@@ -63,13 +69,14 @@ function process_filter($MAPCFG, $map_name, &$map_config, $params = null) {
     global $filter_processed;
     // Skip implicit calls if already processed explicit
     if($params === null && $filter_processed)
-        return;
+        return true;
     $filter_processed = true;
 
     if($params === null)
         $params = $MAPCFG->getSourceParams();
 
     //filter_hostgroup($map_config, $params);
+    return true; // allow caching
 }
 
 ?>

@@ -3,7 +3,7 @@
  *
  * CoreAuthorisationHandler.php - Authorsiation handler
  *
- * Copyright (c) 2004-2011 NagVis Project (Contact: info@nagvis.org)
+ * Copyright (c) 2004-2016 NagVis Project (Contact: info@nagvis.org)
  *
  * License:
  *
@@ -26,7 +26,7 @@
  * This class handles all authorisation tasks and is the glue between the
  * application and the different authorisation modules.
  *
- * @author Lars Michelsen <lars@vertical-visions.de>
+ * @author Lars Michelsen <lm@larsmichelsen.com>
  */
 class CoreAuthorisationHandler {
     private $sModuleName = '';
@@ -108,6 +108,10 @@ class CoreAuthorisationHandler {
         $this->MOD = new $this->sModuleName();
     }
 
+    public function renameMapPermissions($old_name, $new_name) {
+        return $this->MOD->renameMapPermissions($old_name, $new_name);
+    }
+
     public function createPermission($mod, $name) {
         return $this->MOD->createPermission($mod, $name);
     }
@@ -120,10 +124,18 @@ class CoreAuthorisationHandler {
         return $this->sModuleName;
     }
 
+    public function rolesConfigurable() {
+        return $this->MOD->rolesConfigurable;
+    }
+
     public function deleteRole($roleId) {
         // FIXME: First check if this is supported
 
         return $this->MOD->deleteRole($roleId);
+    }
+
+    public function roleUsedBy($roleId) {
+        return $this->MOD->roleUsedBy($roleId);
     }
 
     public function deleteUser($userId) {
@@ -152,6 +164,20 @@ class CoreAuthorisationHandler {
 
     private function sortPerms($a, $b) {
         return strcmp($a['mod'].$a['obj'].$a['act'], $b['mod'].$b['obj'].$b['act']);
+    }
+
+    public function cleanupPermissions() {
+        global $CORE;
+
+        // loop all map related permissions and check whether or not the map
+        // is still available
+        foreach ($this->getAllVisiblePerms() AS $perm) {
+            if ($perm['mod'] == 'Map' && $perm['obj'] != '*') {
+                if(count($CORE->getAvailableMaps('/^'.$perm['obj'].'$/')) <= 0) {
+                    $this->deletePermission('Map', $perm['obj']);
+                }
+            }
+        }
     }
 
     public function getAllVisiblePerms() {

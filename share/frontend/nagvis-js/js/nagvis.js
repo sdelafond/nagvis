@@ -2,7 +2,7 @@
  *
  * nagvis.js - Some NagVis function which are used in NagVis frontend
  *
- * Copyright (c) 2004-2011 NagVis Project (Contact: info@nagvis.org)
+ * Copyright (c) 2004-2016 NagVis Project (Contact: info@nagvis.org)
  *
  * License:
  *
@@ -22,7 +22,7 @@
  *****************************************************************************/
 
 /**
- * @author	Lars Michelsen <lars@vertical-visions.de>
+ * @author	Lars Michelsen <lm@larsmichelsen.com>
  */
 
 /* Comments for jslint */
@@ -32,17 +32,13 @@
 /*jslint evil: true, */
 
 /* Initiate global vars which are set later in the parsed HTML */
-var oWorkerProperties, oGeneralProperties, oRotationProperties, oPageProperties;
+var oWorkerProperties, oGeneralProperties, oRotationProperties;
 var oViewProperties;
+var oPageProperties = {};
 var oFileAges;
 var oStatusMessageTimer;
 var oMapObjects = {};
-var oMapSummaryObj;
 var regexCache = {};
-
-// Used for editing
-var validMapConfig = {};
-var validMainConfig = {};
 
 // Initialize and define some other basic vars
 var iNow = Math.floor(Date.parse(new Date()) / 1000);
@@ -330,7 +326,7 @@ function date(format, timestamp) {
 /**
  * Update the worker counter
  *
- * @author	Lars Michelsen <lars@vertical-visions.de>
+ * @author	Lars Michelsen <lm@larsmichelsen.com>
  */
 function updateWorkerCounter() {
     var oWorkerCounter = document.getElementById('workerLastRunCounter');
@@ -347,7 +343,7 @@ function updateWorkerCounter() {
 /**
  * Function to start the page refresh/rotation
  *
- * @author	Lars Michelsen <lars@vertical-visions.de>
+ * @author	Lars Michelsen <lm@larsmichelsen.com>
  */
 function rotatePage() {
     if(oRotationProperties.nextStepUrl !== '') {
@@ -366,7 +362,7 @@ function rotatePage() {
  * Function counts down in 1 second intervals. If nextRotationTime is smaller
  * than 0, refresh/rotate
  *
- * @author	Lars Michelsen <lars@vertical-visions.de>
+ * @author	Lars Michelsen <lm@larsmichelsen.com>
  */
 function rotationCountdown() {
     // Only proceed with counting when rotation is enabled and the next step time
@@ -399,7 +395,7 @@ function rotationCountdown() {
 /**
  * Function gets the value of url params
  *
- * @author	Lars Michelsen <lars@vertical-visions.de>
+ * @author	Lars Michelsen <lm@larsmichelsen.com>
  */
 function getUrlParam(name) {
     var name2 = name.replace('[', '\\[').replace(']', '\\]');
@@ -456,7 +452,7 @@ function makeuri(addparams) {
 /**
  * Function to set the rotation switch label dynamicaly
  *
- * @author	Lars Michelsen <lars@vertical-visions.de>
+ * @author	Lars Michelsen <lm@larsmichelsen.com>
  */
 function setRotationLabel() {
     if(oRotationProperties.rotationEnabled == true) {
@@ -471,7 +467,7 @@ function setRotationLabel() {
 /**
  * Function to start/stop the rotation
  *
- * @author	Lars Michelsen <lars@vertical-visions.de>
+ * @author	Lars Michelsen <lm@larsmichelsen.com>
  */
 function switchRotation() {
     if(oRotationProperties.rotationEnabled == true) {
@@ -511,29 +507,6 @@ function getRandom(min, max) {
     }
 
     return min + parseInt(Math.random() * (max-min+1), 0);
-}
-
-function cloneObject(what) {
-    var o;
-    var i;
-
-    if(what instanceof Array) {
-        o = [];
-    } else {
-        o = {};
-    }
-
-    for (i in what) {
-        if (typeof what[i] == 'object') {
-            if(i != 'parsedObject') {
-                o[i] = cloneObject(what[i]);
-            }
-        } else {
-            o[i] = what[i];
-        }
-    }
-
-    return o;
 }
 
 function pageWidth() {
@@ -590,7 +563,7 @@ function getScrollLeft() {
 /**
  * Scrolls the screen to the defined coordinates
  *
- * @author	Lars Michelsen <lars@vertical-visions.de>
+ * @author	Lars Michelsen <lm@larsmichelsen.com>
  */
 function scrollSlow(iTargetX, iTargetY, iSpeed) {
     var currentScrollTop = getScrollTop();
@@ -674,7 +647,7 @@ function scrollSlow(iTargetX, iTargetY, iSpeed) {
  *
  * Escapes some evil signs in the url parameters
  *
- * @author	Lars Michelsen <lars@vertical-visions.de>
+ * @author	Lars Michelsen <lm@larsmichelsen.com>
  */
 function escapeUrlValues(sStr) {
     if(typeof sStr === undefined || sStr === null || sStr === '') {
@@ -718,7 +691,7 @@ function escapeUrlValues(sStr) {
  * Function to dumping arrays/objects in javascript for debugging purposes
  * Taken from http://refactormycode.com/codes/226-recursively-dump-an-object
  *
- * @author	Lars Michelsen <lars@vertical-visions.de>
+ * @author	Lars Michelsen <lm@larsmichelsen.com>
  */
 function oDump(object, depth, max){
     depth = depth || 0;
@@ -758,7 +731,7 @@ function oLength(object) {
 /**
  * Detect firefox browser
  *
- * @author	Lars Michelsen <lars@vertical-visions.de>
+ * @author	Lars Michelsen <lm@larsmichelsen.com>
  */
 function isFirefox() {
   return navigator.userAgent.indexOf("Firefox") > -1;
@@ -781,7 +754,7 @@ function isFirefox() {
  * Hope the use here in NagVis is ok for license reasons. If not please contact me.
  * Slightly extended for NagVis
  *
- * @author	Lars Michelsen <lars@vertical-visions.de>
+ * @author	Lars Michelsen <lm@larsmichelsen.com>
  */
 addDOMLoadEvent = (function(){
     // create event function stack
@@ -854,27 +827,29 @@ addDOMLoadEvent = (function(){
  * eventlog. It also displays an error box to the user.
  * It returns true to let the browser also handle the error.
  *
- * @author	Lars Michelsen <lars@vertical-visions.de>
+ * @author	Lars Michelsen <lm@larsmichelsen.com>
  */
 function handleJSError(sMsg, sUrl, iLine) {
     if(!isset(sUrl))
   	var sUrl = '<Empty URL>';
+
     // Log to javascript eventlog
     eventlog("js-error", "critical", "JS-Error occured: " + sMsg + " " + sUrl + " (" + iLine + ")");
 
-    // Show error box
-    var oMsg = {};
-    oMsg.type = 'CRITICAL';
-    oMsg.message = "Javascript error occured:\n " + sMsg + " "
-                   + sUrl + " (" + iLine + ")<br /><br /><code>- Stacktrace - <br />"
-                   + printStackTrace().join("<br />") + '</code>';
-    oMsg.title = "Javascript error";
-
-    // Handle application message/error
-    frontendMessage(oMsg);
-    oMsg = null;
-
+    frontendMessage({
+        'type'    : 'error',
+        'title'   : 'Error: Javascript Error',
+        'message' : 'Javascript error occured:\n ' + sMsg + ' '
+                   + sUrl + ' (' + iLine + ')'
+    });
     return false;
+}
+
+function handleException(e) {
+    var msg = e.name+': '+e.message;
+    if (e.stack)
+        msg += '<br><code>'+e.stack+'</code>';
+    handleJSError(msg, e.fileName, e.lineNumber);
 }
 
 // Enable javascript error handler
@@ -885,7 +860,7 @@ try {
 /**
  * Cross browser mapper to add an event to an object
  *
- * @author	Lars Michelsen <lars@vertical-visions.de>
+ * @author	Lars Michelsen <lm@larsmichelsen.com>
  */
 function addEvent(obj, type, fn) {
    if(obj.addEventListener) {
@@ -904,10 +879,20 @@ function removeEvent(obj, type, fn) {
     }
 }
 
+function preventDefaultEvents(event) {
+    if (event.preventDefault)
+        event.preventDefault();
+    else
+        event.returnValue = false;
+    if (event.stopPropagation)
+        event.stopPropagation();
+    return false;
+}
+
 /**
  * Displays a system status message
  *
- * @author	Lars Michelsen <lars@vertical-visions.de>
+ * @author	Lars Michelsen <lm@larsmichelsen.com>
  */
 function displayStatusMessage(msg, type, hold) {
     var iMessageTime = 5000;
@@ -964,22 +949,15 @@ function hideStatusMessage() {
  * Creates a html box on the map. Used by textbox objects, labels and line labels
  *
  * @return  Object  Returns the div object of the textbox
- * @author  Lars Michelsen <lars@vertical-visions.de>
+ * @author  Lars Michelsen <lm@larsmichelsen.com>
  */
-function drawNagVisTextbox(oContainer, id, className, bgColor, borderColor, x, y, z, w, h, text, customStyle) {
-    var initRendering = false;
-    var oLabelDiv = document.getElementById(id);
-    if(!oLabelDiv) {
-        oLabelDiv = document.createElement('div');
-        oLabelDiv.setAttribute('id', id);
-        initRendering = true;
-    }
-    oLabelDiv.setAttribute('class', className);
-    oLabelDiv.setAttribute('className', className);
+function renderNagVisTextbox(id, bgColor, borderColor, x, y, z, w, h, text, customStyle) {
+    var oLabelDiv = document.createElement('div');
+    oLabelDiv.setAttribute('id', id);
+    oLabelDiv.className = 'box';
     oLabelDiv.style.background = bgColor;
     oLabelDiv.style.borderColor = borderColor;
 
-    oLabelDiv.style.position = 'absolute';
     oLabelDiv.style.left = x + 'px';
     oLabelDiv.style.top = y + 'px';
 
@@ -990,7 +968,6 @@ function drawNagVisTextbox(oContainer, id, className, bgColor, borderColor, x, y
         oLabelDiv.style.height = addZoomFactor(h) + 'px';
 
     oLabelDiv.style.zIndex = parseInt(z) + 1;
-    oLabelDiv.style.overflow = 'visible';
 
     /**
      * IE workaround: The transparent for the color is not enough. The border
@@ -1043,29 +1020,30 @@ function drawNagVisTextbox(oContainer, id, className, bgColor, borderColor, x, y
     }
 
     oLabelSpan.innerHTML = text;
+    executeJS(oLabelSpan);
 
     oLabelDiv.appendChild(oLabelSpan);
-    oContainer.appendChild(oLabelDiv);
 
     // Take zoom factor into account
-    if(initRendering) {
+    if (isZoomed()) {
         oLabelDiv.width  = addZoomFactor(oLabelDiv.width);
         oLabelDiv.height = addZoomFactor(oLabelDiv.height);
+
         var fontSize = getEffectiveStyle(oLabelSpan, 'font-size');
         if(fontSize === null) {
             eventlog(
-                "drawNagVisTextbox",
+                "renderNagVisTextbox",
                 "critical",
                 "Unable to fetch font-size attribute for textbox"
             );
         } else {
             // Only take zoom into account if the fontSize is set in px
-            if(fontSize.indexOf('px') !== -1) {
-                var fontSize = parseInt(fontSize.replace('px', ''));
+            if (fontSize.indexOf('px') !== -1) {
+                var fontSize = parseFloat(fontSize.replace('px', ''));
                 oLabelSpan.style.fontSize = addZoomFactor(fontSize) + 'px';
             } else {
                 eventlog(
-                    "drawNagVisTextbox",
+                    "renderNagVisTextbox",
                     "critical",
                     "Zoom: Can not handle this font-size declaration (" + fontSize + ")"
                 );
@@ -1081,7 +1059,7 @@ function drawNagVisTextbox(oContainer, id, className, bgColor, borderColor, x, y
  * Scales a hex color down/up
  *
  * @return  String  New and maybe scaled hex code
- * @author  Lars Michelsen <lars@vertical-visions.de>
+ * @author  Lars Michelsen <lm@larsmichelsen.com>
  */
 function lightenColor(code, rD, gD, bD) {
     var r = parseInt(code.substring(1, 3), 16);
@@ -1102,7 +1080,7 @@ function lightenColor(code, rD, gD, bD) {
 /**
  * Handles regular expressions in NagVis js frontend (including regex cache)
  *
- * @author  Lars Michelsen <lars@vertical-visions.de>
+ * @author  Lars Michelsen <lm@larsmichelsen.com>
  */
 function getRegEx(n, exp, mod) {
     if(typeof(regexCache[n]) !== 'undefined')
@@ -1120,21 +1098,23 @@ function getRegEx(n, exp, mod) {
 /**
  * Sends a user option to the server using an async json request
  *
- * @author  Lars Michelsen <lars@vertical-visions.de>
+ * @author  Lars Michelsen <lm@larsmichelsen.com>
  */
 function storeUserOption(key, value) {
     // Set in current page
     oUserProperties[key] = value;
 
     // And send to server
-    var url = oGeneralProperties.path_server + '?mod=User&act=setOption&opts['+escapeUrlValues(key)+']=' + escapeUrlValues(value);
-    getAsyncRequest(url, false, undefined, undefined);
+    call_ajax(oGeneralProperties.path_server + '?mod=User&act=setOption&'
+              +'opts['+escapeUrlValues(key)+']='+escapeUrlValues(value), {
+        decode_json: false
+    });
 }
 
 /**
  * Checks if a variable is set
  *
- * @author  Lars Michelsen <lars@vertical-visions.de>
+ * @author  Lars Michelsen <lm@larsmichelsen.com>
  */
 function isset(v) {
     return typeof(v) !== 'undefined' && v !== null;
@@ -1143,7 +1123,7 @@ function isset(v) {
 /**
  * Checks if a variable is an integer
  *
- * @author  Lars Michelsen <lars@vertical-visions.de>
+ * @author  Lars Michelsen <lm@larsmichelsen.com>
  */
 function isInt(v) {
   return parseFloat(v) == parseInt(v) && !isNaN(v);
@@ -1159,21 +1139,56 @@ function isFloat(v) {
 /**
  * Helper to parse px values from dom to numbers
  *
- * @author  Lars Michelsen <lars@vertical-visions.de>
+ * @author  Lars Michelsen <lm@larsmichelsen.com>
  */
 function pxToInt(v) {
     return parseInt(v.replace('px', ''));
 }
 
+// It's a bit problematic to detect relative coords because there is no
+// 100% save way to detect relative coords. On the worldmap there may be
+// coordinates that have a huge offset value (e.g. a line from new york to
+// san francisco and zooming to new your will lead to a negative 5 digit
+// negative coord).
 function isRelativeCoord(v) {
-    return isset(v) && ((!isInt(v) && !isFloat(v)) || v.length === 6);
+    return isset(v) && ((!isInt(v) && !isFloat(v))
+                        || (v.length === 6 && v.charAt(0) != "-" && v.indexOf(".") == -1));
 }
 
-function getKeys(o) {
-    var a = [];
-    for(var key in o)
-        a.push(key);
-    return a;
+// Helper function to determine the number of entries in an object
+Object.size = function(obj) {
+    var size = 0, key;
+    for (key in obj) {
+        if (obj.hasOwnProperty(key)) size++;
+    }
+    return size;
+}
+
+// Add compatibility code for browsers not supporting Function.prototype.bind().
+// see https://developer.mozilla.org/de/docs/Web/JavaScript/Reference/Global_Objects/Function/bind
+if (!Function.prototype.bind) {
+  Function.prototype.bind = function(oThis) {
+    if (typeof this !== 'function') {
+      // closest thing possible to the ECMAScript 5
+      // internal IsCallable function
+      throw new TypeError('Function.prototype.bind - what is trying to be bound is not callable');
+    }
+
+    var aArgs   = Array.prototype.slice.call(arguments, 1),
+        fToBind = this,
+        fNOP    = function() {},
+        fBound  = function() {
+          return fToBind.apply(this instanceof fNOP
+                 ? this
+                 : oThis,
+                 aArgs.concat(Array.prototype.slice.call(arguments)));
+        };
+
+    fNOP.prototype = this.prototype;
+    fBound.prototype = new fNOP();
+
+    return fBound;
+  };
 }
 
 // Is missing in some browser, e.g. IE
@@ -1237,43 +1252,15 @@ function getEffectiveStyle(e, attr) {
     return null;
 }
 
-/**
- * Hack to scale elements which should fill 100% of the windows viewport. The
- * problem here is that some map objects might increase the width of the map
- * so that the viewport is not enough to display the whole map. In that case
- * elements with a width of 100% don't scale to the map width. Instead of this
- * the elements are scaled to the viewports width.
- * This changes the behaviour and resizes the 100% elements to the map size.
- *
- * @author  Lars Michelsen <lars@vertical-visions.de>
- */
-function scaleView() {
-    var header       = document.getElementById('header');
-    var headerSpacer = document.getElementById('headerspacer');
-    if(header) {
-        header.style.width = pageWidth() + 'px';
-        if(headerSpacer) {
-            headerSpacer.style.height = header.clientHeight + 'px';
-            headerSpacer = null;
-        }
-        header = null;
-    }
-
-    // The sidebar should fill the whole screen all the time
-    var sidebar = document.getElementById('sidebar');
-    if(sidebar && sidebarOpen()) {
-        sidebar.style.height = (pageHeight() + getScrollTop()) + 'px';
-    }
-    sidebar = null;
-}
-
 var g_zoom_factor = null;
 function getZoomFactor() {
     if(g_zoom_factor !== null)
         return g_zoom_factor; // only compute once
 
     var zoom = getViewParam('zoom');
-    if(zoom === null)
+    // Fill: At first use 100% zoom. Later, when everything has been rendered,
+    // calculate the fill zoom factor and re-render with this option.
+    if (zoom === null || zoom == 'fill')
         g_zoom_factor = 100;
     else
         g_zoom_factor = parseInt(zoom); 
@@ -1282,32 +1269,42 @@ function getZoomFactor() {
 }
 
 function isZoomed() {
-    return g_zoom_factor !== 100;
+    return getZoomFactor() !== 100;
 }
 
 /**
  * Handles the zoom factor of the current view for a single integer which
  * might be a coordinate or a dimension of an object
  */
-function addZoomFactor(coord) {
+function addZoomFactor(coord, forced) {
+    if (typeof(forced) === 'undefined')
+        var forced = false;
+
+    if (!forced && oGeneralProperties.zoom_scale_objects && oGeneralProperties.zoom_scale_objects != 1)
+        return parseInt(coord);
+
     return parseInt(coord * getZoomFactor() / 100);
 }
 
-function rmZoomFactor(coord) {
+function rmZoomFactor(coord, forced) {
+    if (typeof(forced) === 'undefined')
+        var forced = false;
+
+    if (!forced && oGeneralProperties.zoom_scale_objects && oGeneralProperties.zoom_scale_objects != 1)
+        return parseInt(coord);
+
     return parseInt(coord / getZoomFactor() * 100);
 }
 
-function zoomHandler(event) {
+function zoomHandler(event, obj, forced_zoom) {
     // Another IE specific thing: "this" points to the window element,
     // not the raising object
-    if(this == window) {
+    if(obj == window) {
         if(event.srcElement) {
             var obj = event.srcElement;
         }
-    } else {
-        var obj = this;
     }
-    
+
     if(!obj)
         return false;
 
@@ -1318,8 +1315,8 @@ function zoomHandler(event) {
     // because IE can not tell us anything about the dimensions when
     // the object is not visible
     obj.style.display = 'block';
-    var width  = addZoomFactor(obj.width);
-    var height = addZoomFactor(obj.height);
+    var width  = addZoomFactor(obj.width, forced_zoom);
+    var height = addZoomFactor(obj.height, forced_zoom);
 
     obj.style.display = 'none';
 
@@ -1346,12 +1343,16 @@ function zoomHandler(event) {
  * resizing of the objects.
  * The '.src' attribute must be assigned afterwards
  */
-function addZoomHandler(oImage) {
+function addZoomHandler(oImage, forced_zoom) {
     if(!isZoomed())
         return; // If not zoomed, no handler is needed
+
+    if (typeof(forced_zoom) == 'undefined')
+        var forced_zoom = false;
+
     oImage.style.display = 'none';
 
-    addEvent(oImage, 'load', zoomHandler);
+    addEvent(oImage, 'load', function(event) { zoomHandler(event, this, forced_zoom); });
     oImage = null;
 }
 
@@ -1393,4 +1394,112 @@ function _(s, replace) {
     }
 
     return s;
+}
+
+function has_class(o, cn) {
+    if (typeof o.className === 'undefined')
+        return false;
+    var parts = o.className.split(' ');
+    for (var x = 0; x < parts.length; x++) {
+        if (parts[x] == cn)
+            return true;
+    }
+    return false;
+}
+
+function remove_class(o, cn) {
+    var parts = o.className.split(' ');
+    var new_parts = Array();
+    for (var x = 0; x < parts.length; x++) {
+        if (parts[x] != cn)
+            new_parts.push(parts[x]);
+    }
+    o.className = new_parts.join(" ");
+}
+
+function add_class(o, cn) {
+    if (!has_class(o, cn))
+        o.className += " " + cn;
+}
+
+function change_class(o, a, b) {
+    remove_class(o, a);
+    add_class(o, b);
+}
+
+// Calculates a position between two integers
+function middle(x1, x2, cut) {
+    return parseInt(x1) + parseInt((x2 - x1) * cut);
+}
+
+// Returns the maximum value in an array
+function max(arr) {
+    var max = arr[0];
+
+    for (var i = 1, len = arr.length; i < len; i++) {
+        if (arr[i] > max) {
+            max = arr[i];
+        }
+    }
+
+    return max;
+}
+
+// Returns the minimum value in an array
+function min(arr) {
+    var min = arr[0];
+
+    for (var i = 1, len = arr.length; i < len; i++) {
+        if (arr[i] < min) {
+            min = arr[i];
+        }
+    }
+
+    return min;
+}
+
+function newX(a, b, x, y) {
+    return Math.round(Math.cos(Math.atan2(y,x)+Math.atan2(b,a))*Math.sqrt(x*x+y*y));
+}
+
+function newY(a, b, x, y) {
+    return Math.round(Math.sin(Math.atan2(y,x)+Math.atan2(b,a))*Math.sqrt(x*x+y*y));
+}
+
+// simple implementation of function default arguments when
+// using objects as function parameters. Example:
+// function xxx(args) {
+//     args = merge_args({
+//         'arg2': 'default_val',
+//     });
+// }
+// xxx({
+//   'arg1': 'val1',
+//   'arg3': 'val3',
+// })
+function merge_args() {
+    var defaults = arguments[0];
+    var args = arguments[1] || {};
+
+    for (var name in args)
+        defaults[name] = args[name];
+
+    return defaults;
+}
+
+function executeJS(obj) {
+    var aScripts = obj.getElementsByTagName('script');
+    for (var i = 0; i < aScripts.length; i++) {
+        if (aScripts[i].src && aScripts[i].src !== '') {
+            var oScr = document.createElement('script');
+            oScr.src = aScripts[i].src;
+            document.getElementsByTagName("HEAD")[0].appendChild(oScr);
+        } else {
+            try {
+                eval(aScripts[i].text);
+            } catch(e) {
+                alert(aScripts[i].text + "\nError:" + e.message);
+            }
+        }
+    }
 }

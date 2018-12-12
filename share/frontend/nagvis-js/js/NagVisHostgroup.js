@@ -3,7 +3,7 @@
  * NagVisHostgroup.js - This class handles the visualisation of
  *                      hostgroup objects
  *
- * Copyright (c) 2004-2011 NagVis Project (Contact: info@nagvis.org)
+ * Copyright (c) 2004-2016 NagVis Project (Contact: info@nagvis.org)
  *
  * License:
  *
@@ -22,15 +22,8 @@
  *
  *****************************************************************************/
 
-/**
- * @author	Lars Michelsen <lars@vertical-visions.de>
- */
-
 var NagVisHostgroup = NagVisStatefulObject.extend({
     constructor: function(oConf) {
-        // Call parent constructor
         this.base(oConf);
-
-        this.getMembers();
     }
 });

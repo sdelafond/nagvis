@@ -3,7 +3,7 @@
  *
  * CoreModAuth.php - This module handles the user login and logout
  *
- * Copyright (c) 2004-2011 NagVis Project (Contact: info@nagvis.org)
+ * Copyright (c) 2004-2016 NagVis Project (Contact: info@nagvis.org)
  *
  * License:
  *
@@ -23,7 +23,7 @@
  *****************************************************************************/
 
 /**
- * @author  Lars Michelsen <lars@vertical-visions.de>
+ * @author  Lars Michelsen <lm@larsmichelsen.com>
  */
 class CoreModAuth extends CoreModule {
     protected $CORE;
@@ -49,9 +49,7 @@ class CoreModAuth extends CoreModule {
             switch($this->sAction) {
                 case 'logout':
                     if($AUTH->logout())
-                        throw new Success(l('You have been logged out. You will be redirected.'),
-                                          l('Logged out'),
-                                          1, cfg('paths', 'htmlbase'));
+                        return true;
                     else
                         throw new NagVisException(l('Unable to log you out. Maybe it is not supported by your authentication module.'),
                                           null, 1, cfg('paths', 'htmlbase'));

@@ -4,7 +4,7 @@
  * NagVisInfoView.php - Class for handling the rendering of the support
  *                      information page
  *
- * Copyright (c) 2004-2011 NagVis Project (Contact: info@nagvis.org)
+ * Copyright (c) 2004-2016 NagVis Project (Contact: info@nagvis.org)
  *
  * License:
  *
@@ -24,34 +24,23 @@
  *****************************************************************************/
 
 /**
- * @author	Lars Michelsen <lars@vertical-visions.de>
+ * @author	Lars Michelsen <lm@larsmichelsen.com>
  */
 class NagVisInfoView {
-    private $CORE;
-
-    /**
-     * Class Constructor
-     *
-     * @param 	GlobalCore 	$CORE
-     * @author 	Lars Michelsen <lars@vertical-visions.de>
-     */
-    public function __construct($CORE) {
-        $this->CORE = $CORE;
-    }
+    public function __construct($CORE) {}
 
     /**
      * Parses the information in html format
      *
      * @return	String 	String with Html Code
-     * @author 	Lars Michelsen <lars@vertical-visions.de>
+     * @author 	Lars Michelsen <lm@larsmichelsen.com>
      */
     public function parse() {
-        global $AUTH;
+        global $AUTH, $AUTHORISATION;
         // Initialize template system
-        $TMPL = New FrontendTemplateSystem($this->CORE);
+        $TMPL = New FrontendTemplateSystem();
         $TMPLSYS = $TMPL->getTmplSys();
 
-        $AUTHORISATION  = $this->CORE->getAuthorization();
         $userName  = $AUTH->getUser();
         $userId    = $AUTH->getUserId();
         $userRoles = $AUTHORISATION->getUserRoles($userId);
@@ -60,7 +49,7 @@ class NagVisInfoView {
         $aData = Array(
             'pageTitle'      => cfg('internal', 'title') . ' &rsaquo; '.l('supportInfo'),
             'htmlBase'       => cfg('paths', 'htmlbase'),
-            'htmlTemplates'  => $this->CORE->getMainCfg()->getPath('html', 'global', 'templates'),
+            'htmlTemplates'  => path('html', 'global', 'templates'),
             'nagvisVersion'  => CONST_VERSION,
             'phpVersion'     => PHP_VERSION,
             'mysqlVersion'   => shell_exec('mysql --version'),

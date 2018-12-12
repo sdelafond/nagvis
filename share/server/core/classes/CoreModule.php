@@ -3,7 +3,7 @@
  *
  * CoreModule.php - Abstract definition of a core module
  *
- * Copyright (c) 2004-2011 NagVis Project (Contact: info@nagvis.org)
+ * Copyright (c) 2004-2016 NagVis Project (Contact: info@nagvis.org)
  *
  * License:
  *
@@ -23,10 +23,9 @@
  ******************************************************************************/
 
 /**
- * @author Lars Michelsen <lars@vertical-visions.de>
+ * @author Lars Michelsen <lm@larsmichelsen.com>
  */
 abstract class CoreModule {
-    protected $CORE = null;
     protected $UHANDLER = null;
     protected $FHANDLER = null;
 
@@ -39,7 +38,7 @@ abstract class CoreModule {
     /**
      * Tells if the module offers the requested action
      *
-     * @author  Lars Michelsen <lars@vertical-visions.de>
+     * @author  Lars Michelsen <lm@larsmichelsen.com>
      */
     public function offersAction($sAction) {
         return isset($this->aActions[$sAction]);
@@ -48,7 +47,7 @@ abstract class CoreModule {
     /**
      * Stores the requested action in the module
      *
-     * @author  Lars Michelsen <lars@vertical-visions.de>
+     * @author  Lars Michelsen <lm@larsmichelsen.com>
      */
     public function setAction($sAction) {
         if(!$this->offersAction($sAction))
@@ -61,7 +60,7 @@ abstract class CoreModule {
     /**
      * Tells wether the requested action requires the users autorisation
      *
-     * @author  Lars Michelsen <lars@vertical-visions.de>
+     * @author  Lars Michelsen <lm@larsmichelsen.com>
      */
     public function actionRequiresAuthorisation() {
         return isset($this->aActions[$this->sAction]) && $this->aActions[$this->sAction] !== !REQUIRES_AUTHORISATION;
@@ -70,7 +69,7 @@ abstract class CoreModule {
     /**
      * Tells wether the requested object is available
      *
-     * @author  Lars Michelsen <lars@vertical-visions.de>
+     * @author  Lars Michelsen <lm@larsmichelsen.com>
      */
     public function offersObject($sObject) {
         return isset($this->aObjects[$sObject]);
@@ -80,7 +79,7 @@ abstract class CoreModule {
      * Stores the requested object name in the module
      * when it is supported
      *
-     * @author  Lars Michelsen <lars@vertical-visions.de>
+     * @author  Lars Michelsen <lm@larsmichelsen.com>
      */
     public function setObject($sObject) {
         if(!$this->offersObject($sObject)) {
@@ -98,7 +97,7 @@ abstract class CoreModule {
     /**
      *  Returns the object string
      *
-     * @author  Lars Michelsen <lars@vertical-visions.de>
+     * @author  Lars Michelsen <lm@larsmichelsen.com>
      */
     public function getObject() {
         return $this->sObject;
@@ -107,7 +106,7 @@ abstract class CoreModule {
     /**
      * Checks if the user is permitted to perform the requested action
      *
-     * @author  Lars Michelsen <lars@vertical-visions.de>
+     * @author  Lars Michelsen <lm@larsmichelsen.com>
      */
     public function isPermitted() {
         global $AUTHORISATION;
@@ -118,7 +117,7 @@ abstract class CoreModule {
         // Maybe the requested action is summarized by some other
         $action = !is_bool($this->aActions[$this->sAction]) ? $this->aActions[$this->sAction] : $this->sAction;
 
-        if(!$AUTHORISATION->isPermitted($this->sName, $action, $this->sObject))
+        if($authorized && !$AUTHORISATION->isPermitted($this->sName, $action, $this->sObject))
             $authorized = false;
 
         if(!$authorized)
@@ -129,10 +128,10 @@ abstract class CoreModule {
     /**
      * Initializes the URI handler object
      *
-     * @author  Lars Michelsen <lars@vertical-visions.de>
+     * @author  Lars Michelsen <lm@larsmichelsen.com>
      */
     protected function initUriHandler() {
-        $this->UHANDLER = new CoreUriHandler($this->CORE);
+        $this->UHANDLER = new CoreUriHandler();
     }
 
     /**
@@ -150,7 +149,7 @@ abstract class CoreModule {
     /**
      * Reads a list of custom variables from the request
      *
-     * @author  Lars Michelsen <lars@vertical-visions.de>
+     * @author  Lars Michelsen <lm@larsmichelsen.com>
      */
     protected function getCustomOptions($aKeys, $aDefaults = Array(), $mixed = false) {
         if($mixed) {
@@ -187,7 +186,7 @@ abstract class CoreModule {
      * when using different actions. So these special modules
      * can implement that by overriding this method.
      *
-     * @author  Lars Michelsen <lars@vertical-visions.de>
+     * @author  Lars Michelsen <lm@larsmichelsen.com>
      */
     public function initObject() {}
 
@@ -195,14 +194,14 @@ abstract class CoreModule {
      * This method needs to be implemented by each module
      * to handle the user called action
      *
-     * @author  Lars Michelsen <lars@vertical-visions.de>
+     * @author  Lars Michelsen <lm@larsmichelsen.com>
      */
     abstract public function handleAction();
 
     /**
      * Helper function to handle default form responses
      *
-     * @author  Lars Michelsen <lars@vertical-visions.de>
+     * @author  Lars Michelsen <lm@larsmichelsen.com>
      */
     protected function handleResponse($validationHandler, $action, $successMsg = null,
                                         $failMessage = null, $reload = null, $redirectUrl = null) {
@@ -234,7 +233,7 @@ abstract class CoreModule {
     /**
      * Checks if the listed values are set. Otherwise it raises and error message
      *
-     * @author  Lars Michelsen <lars@vertical-visions.de>
+     * @author  Lars Michelsen <lm@larsmichelsen.com>
      */
     protected function verifyValuesSet($HANDLER, $list) {
         // Check if the array is assoc. When it isn't re-format it.
@@ -254,7 +253,7 @@ abstract class CoreModule {
      * Checks if the listes values match the given patterns. Otherwise it raises
      * an error message.
      *
-     * @author  Lars Michelsen <lars@vertical-visions.de>
+     * @author  Lars Michelsen <lm@larsmichelsen.com>
      */
     protected function verifyValuesMatch($HANDLER, $list) {
         foreach($list AS $key => $pattern)
@@ -271,7 +270,7 @@ abstract class CoreModule {
      * Returns null when nothing changed or a structure of the changed objects
      */
     protected function checkFilesChanged($files) {
-        global $AUTHORISATION;
+        global $AUTHORISATION, $CORE;
         $changed = array();
 
         foreach($files AS $file) {
@@ -285,11 +284,11 @@ abstract class CoreModule {
             // Try to fetch the current age of the requested file
             $cur_age = null;
             if($ty == 'maincfg') {
-                $cur_age = $this->CORE->getMainCfg()->getConfigFileAge();
+                $cur_age = $CORE->getMainCfg()->getConfigFileAge();
 
             } elseif($ty == 'map') {
                 if($AUTHORISATION->isPermitted('Map', 'view', $name)) {
-                    $MAPCFG  = new NagVisMapCfg($this->CORE, $name);
+                    $MAPCFG  = new GlobalMapCfg($name);
                     $MAPCFG->readMapConfig();
                     $cur_age = $MAPCFG->getFileModificationTime($age);
                 }

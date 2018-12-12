@@ -3,7 +3,7 @@
  *
  * NagVisHoverUrl.php - Class for handling the hover urls
  *
- * Copyright (c) 2004-2011 NagVis Project (Contact: info@nagvis.org)
+ * Copyright (c) 2004-2016 NagVis Project (Contact: info@nagvis.org)
  *
  * License:
  *
@@ -23,7 +23,7 @@
  *****************************************************************************/
 
 /**
- * @author    Lars Michelsen <lars@vertical-visions.de>
+ * @author    Lars Michelsen <lm@larsmichelsen.com>
  */
 class NagVisHoverUrl {
     private $CORE;
@@ -35,7 +35,7 @@ class NagVisHoverUrl {
      * Class Constructor
      *
      * @param     GlobalCore     $CORE
-     * @author     Lars Michelsen <lars@vertical-visions.de>
+     * @author     Lars Michelsen <lm@larsmichelsen.com>
      */
     public function __construct($CORE, $url) {
         $this->CORE = $CORE;
@@ -52,7 +52,7 @@ class NagVisHoverUrl {
      *
      * "Magic method" returns the contents of the hover url
      *
-     * @author    Lars Michelsen <lars@vertical-visions.de>
+     * @author    Lars Michelsen <lm@larsmichelsen.com>
      */
     public function __toString() {
         return $this->code;
@@ -63,7 +63,7 @@ class NagVisHoverUrl {
      *
      * Reads the given hover url form an object and forms it to a readable format for the hover box
      *
-     * @author    Lars Michelsen <lars@vertical-visions.de>
+     * @author    Lars Michelsen <lm@larsmichelsen.com>
      */
     private function readHoverUrl() {
         /* Context is supported in php >= 5.0
@@ -93,6 +93,11 @@ class NagVisHoverUrl {
             throw new NagVisException(l('couldNotGetHoverUrl', Array('URL' => $this->url)));
         }
 
+        // Try to recode non utf-8 encoded responses to utf-8. Later used
+        // json_encode() needs utf-8 encoded code
+        $content = mb_convert_encoding($content, 'UTF-8',
+            mb_detect_encoding($content, 'UTF-8, ISO-8859-1', true)); 
+
         $this->code = $content;
     }
 
@@ -102,7 +107,7 @@ class NagVisHoverUrl {
      *
      * Replace unwanted things from the code
      *
-     * @author     Lars Michelsen <lars@vertical-visions.de>
+     * @author     Lars Michelsen <lm@larsmichelsen.com>
      */
     private function cleanCode() {
         $this->code = str_replace('"','\\\'',str_replace('\'','\\\'',str_replace("\t",'',str_replace("\n",'',str_replace("\r\n",'',$this->code)))));

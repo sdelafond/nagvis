@@ -2,7 +2,7 @@
  *
  * popupWindow.js - Handles javascript popup windows in NagVis
  *
- * Copyright (c) 2004-2011 NagVis Project (Contact: info@nagvis.org)
+ * Copyright (c) 2004-2016 NagVis Project (Contact: info@nagvis.org)
  *
  * License:
  *
@@ -22,7 +22,7 @@
  *****************************************************************************/
 
 /**
- * @author	Lars Michelsen <lars@vertical-visions.de>
+ * @author	Lars Michelsen <lm@larsmichelsen.com>
  */
 
 var popupNN6 = document.getElementById && !document.all;
@@ -37,7 +37,7 @@ var dragObj = null;
  *
  * @param   Object   Event object
  * @return  Boolean
- * @author	Lars Michelsen <lars@vertical-visions.de>
+ * @author	Lars Michelsen <lm@larsmichelsen.com>
  */
 function movemouse(e) {
  if(bDragging) {
@@ -57,7 +57,7 @@ function movemouse(e) {
  *
  * @param   Object   Event object
  * @return  Boolean
- * @author	Lars Michelsen <lars@vertical-visions.de>
+ * @author	Lars Michelsen <lm@larsmichelsen.com>
  */
 function selectmouse(e) {
     bDragging = true;
@@ -76,29 +76,17 @@ function selectmouse(e) {
     return false;
 }
 
-/**
- * popupWindowClose()
- *
- * Closes and removes the open dialog
- *
- * @author	Lars Michelsen <lars@vertical-visions.de>
- */
 function popupWindowClose() {
     var w = document.getElementById('popupWindow');
-
-    if(w) {
+    if (w)
         document.body.removeChild(w);
-        w = null;
-    }
-}
 
-function popupWindowRefresh() {
-    var oWindow = document.getElementById('popupWindow');
-
-    if(oWindow) {
-        popupWindowPutContent(getSyncRequest(oWindow.url, false, false));
-        oWindow = null;
-    }
+    // Some windows use the jscolor color picker. It might be visible while
+    // a user closes the window. All eventual open color pickers are opened
+    // within popup windows. So it is safe to close all color pickers when
+    // closing a window
+    if (jscolor.picker && jscolor.picker.owner)
+        jscolor.picker.owner.hidePicker();
 }
 
 function popupWindowPutContent(oContent) {
@@ -107,135 +95,71 @@ function popupWindowPutContent(oContent) {
     }
 
     var oCell = document.getElementById('popupWindowContent');
-
     if(oCell) {
         oCell.innerHTML = oContent.code;
-
-        // Need to fix javascript execution in innerHTML
-        // Works in firefox so don't do it for firefox
-        var aScripts = oCell.getElementsByTagName('script');
-        for(var i = 0, len = aScripts.length; i < len; i++) {
-            if(aScripts[i].src && aScripts[i].src !== '') {
-                var oScr = document.createElement('script');
-                oScr.src = aScripts[i].src;
-                document.body.appendChild(oScr);
-                oScr = null;
-            } else {
-                try {
-                    eval(aScripts[i].text);
-                } catch(e) {
-                    alert(oDump(e)+": "+aScripts[i].text);
-                }
-            }
-        }
-        aScripts = null;
+        executeJS(oCell);
     }
-    oCell = null;
 }
 
-/**
- * popupWindow()
- *
- * Creates a javascript dialog
- *
- * @param   String   Window title
- * @param   Object   Object containing the contents
- * @return  Boolean
- * @author	Lars Michelsen <lars@vertical-visions.de>
- */
-function popupWindow(title, oContent, openOnMousePosition, sWidth) {
+// Creates a javascript dialog
+function popupWindow(title, oContent, sWidth, closable) {
     if(oContent === null || oContent.code === null)
         return false;
 
-    if(typeof openOnMousePosition === 'undefined')
-        openOnMousePosition = true;
-
-    if(typeof sWidth === 'undefined' || sWidth === null)
-        sWidth = '';
+    if (typeof closable === 'undefined')
+        closable = true;
 
     // Maybe some other window is still open. Close it now
     popupWindowClose();
 
     // Default window position
-    var posX = getScrollLeft() + 100;
-    var posY = getScrollTop() + 20;
-
-    // Detect the current mouse position and create the window there
-    if(openOnMousePosition) {
-        //FIXME: Maybe code this in the future
-    }
+    var posX = getScrollLeft() + (pageWidth()/2 - sWidth/2);
+    var posY = getScrollTop() + 50;
 
     var oContainerDiv = document.createElement('div');
     oContainerDiv.setAttribute('id', 'popupWindow');
-    oContainerDiv.style.position = 'absolute';
     oContainerDiv.style.left = posX+'px';
     oContainerDiv.style.top = posY+'px';
+    oContainerDiv.style.width = sWidth+'px';
 
     oContainerDiv.url = oContent.url;
 
-    var oTable = document.createElement('table');
-    oTable.setAttribute('id', 'popupWindowMaster');
+    // Render the close button
+    if (closable) {
+        var oClose = document.createElement('div');
+        oClose.className = 'close';
 
-    // When width is not set the window should be auto adjusted
-    if(sWidth !== '') {
-        oContainerDiv.style.width = sWidth+'px';
-        oTable.style.width = sWidth+'px';
+        oClose.onclick = function() {
+            popupWindowClose();
+            return false;
+        };
+
+        oClose.appendChild(document.createTextNode('x'));
+        oContainerDiv.appendChild(oClose);
+        oClose = null;
     }
 
-    var oTbody = document.createElement('tbody');
-    var oRow = document.createElement('tr');
-    var oCell = document.createElement('th');
-    oCell.setAttribute('id', 'dragbar');
+    // Render the window title
+    var oTitle = document.createElement('h1');
+    oTitle.appendChild(document.createTextNode(title));
 
-    oCell.onmousedown = selectmouse;
-    oCell.onmouseup = function() {
+    // Make title the drag window handler
+    oTitle.onmousedown = selectmouse;
+    oTitle.onmouseup = function() {
         bDragging = false;
     };
 
-    oCell.appendChild(document.createTextNode(title));
+    oContainerDiv.appendChild(oTitle);
+    oTitle = null;
 
-    oRow.appendChild(oCell);
-    oCell = null;
-
-    oCell = document.createElement('th');
-    oCell.setAttribute('class', 'control');
-    oCell.setAttribute('className', 'control');
-
-    oCell.onclick = function() {
-        popupWindowClose();
-        return false;
-    };
-
-    oCell.appendChild(document.createTextNode('x'));
-
-    oRow.appendChild(oCell);
-    oCell = null;
-
-    oTbody.appendChild(oRow);
-    oRow = null;
-
-    oRow = document.createElement('tr');
-
-    oCell = document.createElement('td');
-    oCell.setAttribute('id', 'popupWindowContent');
-    oCell.colSpan = '2';
-
-    oRow.appendChild(oCell);
-    oCell = null;
-
-    oTbody.appendChild(oRow);
-    oRow = null;
-
-    oTable.appendChild(oTbody);
-    oTbody = null;
-
-    oContainerDiv.appendChild(oTable);
-    oTable = null;
+    var content = document.createElement('div');
+    content.setAttribute('id', 'popupWindowContent');
+    oContainerDiv.appendChild(content);
+    content = null;
 
     document.body.appendChild(oContainerDiv);
-    oContainerDiv = null;
 
     popupWindowPutContent(oContent);
 
-    return false;
+    return oContainerDiv;
 }

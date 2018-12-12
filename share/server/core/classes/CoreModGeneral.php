@@ -3,7 +3,7 @@
  *
  * CoreModGeneral.php - Core module to handle general ajax requests
  *
- * Copyright (c) 2004-2011 NagVis Project (Contact: info@nagvis.org)
+ * Copyright (c) 2004-2016 NagVis Project (Contact: info@nagvis.org)
  *
  * License:
  *
@@ -23,7 +23,7 @@
  ******************************************************************************/
 
 /**
- * @author Lars Michelsen <lars@vertical-visions.de>
+ * @author Lars Michelsen <lm@larsmichelsen.com>
  */
 class CoreModGeneral extends CoreModule {
 
@@ -89,7 +89,11 @@ class CoreModGeneral extends CoreModule {
             $arrReturn[] = Array('url' => $sUrl, 'code' => $OBJ->__toString());
         }
 
-        return json_encode($arrReturn);
+        $result = json_encode($arrReturn);
+        if ($result === false)
+            throw new NagVisException(l('Data not parsable: [URL] ([MSG])',
+                array('URL' => htmlentities($sUrl, ENT_COMPAT, 'UTF-8'), 'MSG' => json_last_error_msg())));
+        return $result;
     }
 }
 ?>

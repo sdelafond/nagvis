@@ -3,7 +3,7 @@
  *
  * CoreModUrl.php - Core module to handle ajax requests for urls
  *
- * Copyright (c) 2004-2011 NagVis Project (Contact: info@nagvis.org)
+ * Copyright (c) 2004-2016 NagVis Project (Contact: info@nagvis.org)
  *
  * License:
  *
@@ -23,12 +23,13 @@
  ******************************************************************************/
 
 /**
- * @author Lars Michelsen <lars@vertical-visions.de>
+ * @author Lars Michelsen <lm@larsmichelsen.com>
  */
 class CoreModUrl extends CoreModule {
     private $url = null;
 
     public function __construct(GlobalCore $CORE) {
+        $this->sName = 'Url';
         $this->CORE = $CORE;
 
         $aOpts = Array('show' => MATCH_STRING_URL);
@@ -38,7 +39,6 @@ class CoreModUrl extends CoreModule {
         // Register valid actions
         $this->aActions = Array(
             'getContents'   => 'view',
-            'getProperties' => 'view',
         );
     }
 
@@ -50,9 +50,6 @@ class CoreModUrl extends CoreModule {
                 case 'getContents':
                     $sReturn = $this->getContents();
                 break;
-                case 'getProperties':
-                    $sReturn = $this->getProperties();
-                break;
             }
         }
 
@@ -60,13 +57,60 @@ class CoreModUrl extends CoreModule {
     }
 
     private function getContents() {
-        $URL = new NagVisUrl($this->CORE, $this->url);
-        return json_encode(Array('content' => $URL->getContents()));
+        $content = '';
+
+        // Suppress error messages from file_get_contents
+        $oldLevel = error_reporting(0);
+
+        // Only allow urls not paths for security reasons
+        // Reported here: http://news.gmane.org/find-root.php?message_id=%3cf60c42280909021938s7f36c0edhd66d3e9156a5d081%40mail.gmail.com%3e
+        $url = parse_url($this->url);
+        if(!isset($url['scheme']) || ($url['scheme'] != 'http' && $url['scheme'] != 'https')) {
+            throw new NagVisException(l('problemReadingUrl', Array(
+                'URL' => htmlentities($this->url, ENT_COMPAT, 'UTF-8'),
+                'MSG' => 'Not allowed url')));
+            exit(1);
+        }
+
+        // Only accept known URLs. The only place where NagVis defines URLs is in rotation steps.
+        // Get all configured URLs from all configured rotations and check whether or not it's
+        // an allowed URL.
+        if (!$this->isAllowedUrl()) {
+            throw new NagVisException(l('problemReadingUrl', Array(
+                'URL' => htmlentities($this->url, ENT_COMPAT, 'UTF-8'),
+                'MSG' => 'Not allowed url')));
+        }
+
+        if (false == ($content = file_get_contents($this->url))) {
+            $error = error_get_last();
+            throw new NagVisException(l('problemReadingUrl', Array(
+                'URL' => htmlentities($this->url, ENT_COMPAT, 'UTF-8'),
+                'MSG' => $error['message'])));
+        }
+
+        // set the old level of reporting back
+        error_reporting($oldLevel);
+
+        return json_encode(Array('content' => $content));
     }
 
-    private function getProperties() {
-        $URL = new NagVisUrl($this->CORE, $this->url);
-        return $URL->parsePropertiesJson();
+    private function isAllowedUrl() {
+        global $CORE;
+        $allowed = array();
+
+        foreach($CORE->getPermittedRotationPools() AS $pool_name) {
+            $ROTATION = new CoreRotation($pool_name);
+
+            $iNum = $ROTATION->getNumSteps();
+            for($i = 0; $i < $iNum; $i++) {
+                $step = $ROTATION->getStepById($i);
+                if(isset($step['url']) && $step['url'] != '') {
+                    $allowed[$step['url']] = true;
+                }
+            }
+        }
+
+        return isset($allowed[$this->url]);
     }
 }
 ?>

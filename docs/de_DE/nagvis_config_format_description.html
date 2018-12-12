@@ -78,19 +78,13 @@
             <th width="200">Wert</th><th width="150">Default</th><th>Beschreibung</th>
         </tr>
         <tr>
-            <td>audit_log</td><td>1</td><td>Aktivieren/deaktiviern der Protokollierung von sicherheitsrelevanten Benutzeraktionen in NagVis. Benutzeran- und abmeldungen werden z.B. in var/nagvis-audit.log protokolliert.</td>
+            <td>audit_log</td><td>0</td><td>Aktivieren/deaktiviern der Protokollierung von sicherheitsrelevanten Benutzeraktionen in NagVis. Benutzeran- und abmeldungen werden z.B. in var/nagvis-audit.log protokolliert.</td>
         </tr>
         <tr>
-            <td>authmodule</td><td>CoreAuthModSQLite</td><td>Definiert das zu benutzende Authentifizierungsmodul. Per Default benutzt NagVis das eingebaute SQLite-Authentifizierungsmodul. Bei der Auslieferung ist kein anderes Authentifizierungsmodul verf&uuml;gbar. Es ist m&ouml;glich, andere Authentifizierungsmodule hinzuzuf&uuml;gen, um andere Authentifizierungsmechanismen zu unterst&uuml;tzen. Weitere Einzelheiten finden Sie in der <a href="auth_modules">Authentifizierungsmodul</a>-Dokumentation</td><td> 
+            <td>authmodule</td><td>CoreAuthModSQLite</td><td>Definiert das zu benutzende Authentifizierungsmodul. Per Default benutzt NagVis das eingebaute SQLite-Authentifizierungsmodul. Bei der Auslieferung ist kein anderes Authentifizierungsmodul verf&uuml;gbar. Es ist m&ouml;glich, andere Authentifizierungsmodule hinzuzuf&uuml;gen, um andere Authentifizierungsmechanismen zu unterst&uuml;tzen.</td><td> 
         </tr>
         <tr>
-            <td>authorisationmodule</td><td>CoreAuthorisationModSQLite</td><td>Definiert das zu benutzende Autorisierungsmodul. Per Default benutzt NagVis das eingebaute SQLite-Autorisierungsmodul. Bei der Auslieferung ist kein anderes Autorisierungsmodul verf&uuml;gbar. Es ist m&ouml;glich, andere Autorisierungsmodule hinzuzuf&uuml;gen, um andere Autorisierungsmechanismen zu unterst&uuml;tzen. Weitere Einzelheiten finden Sie in der <a href="authorisation_modules">Autorisierungsmodul</a>-Dokumentation</td><td> 
-        </tr>
-        <tr>
-          <td>controls_size <font color="#ff0000">(neu in 1.6)</font></td>
-          <td>10</td>
-          <td>Die Gr&ouml;&szlig;e (in Pixeln) von Objekt-Kontrollelementen in entsperrten (Edit)-Modus im Frontend.
-              Objekt-Kontrollelemente sind z.B. die "modify"-, "delete"- und "move"-Icons.</td>
+            <td>authorisationmodule</td><td>CoreAuthorisationModSQLite</td><td>Definiert das zu benutzende Autorisierungsmodul. Per Default benutzt NagVis das eingebaute SQLite-Autorisierungsmodul. Bei der Auslieferung ist kein anderes Autorisierungsmodul verf&uuml;gbar. Es ist m&ouml;glich, andere Autorisierungsmodule hinzuzuf&uuml;gen, um andere Autorisierungsmechanismen zu unterst&uuml;tzen.</td><td> 
         </tr>
         <tr>
             <td>dateformat</td><td>Y-m-d H:i:s</td><td>Das in NagVis benutzte Format f&uuml;r Datum- und Zeit. Verf&uuml;gbare Optionen wie bei der <a href="http://www.php.net/date">date()</a>-Funktion von php     </td><td> 
@@ -127,7 +121,7 @@
    
             <p><i>LogonMultisite</i>: Dieses Modul benutzt die Authentifizierung von auth_*-Cookies, die von Check_MK-Multisite geliefert werden, wenn die Cookie-basierte Authentifizierung verwendet wird.</p>
 
-            <p>Es ist m&ouml;glich, eigene Logon-Module hinzuzuf&uuml;gen, um andere Dialoge zu bedienen. Weitere Informantionen finden Sie in der <a href="logon_modules.html">logon module</a>-Dokumentation.</p></td>
+            <p>Es ist m&ouml;glich, eigene Logon-Module hinzuzuf&uuml;gen, um andere Dialoge zu bedienen.</p></td>
 
         </tr>
         <tr>
@@ -159,6 +153,26 @@
             <td>Guest</td>
             <td>Gleich wie die &quot;logonenvcreaterole&quot;-Option (wird nur vom LogonMultisite-Modul verwendet).</td>
         </tr>
+
+        <tr>
+            <td>only_permitted_objects</td>
+            <td>0</td>
+            <td><p>Aktiviert/Deaktiviert den Zugang nur zu erlaubten Monitoring-Objekten. Dies ist n&uuml;tzlich wenn man den
+                Zugriff auf Statusinformationen durch NagVis UND durch den Authorisierungmechanismus der Monitoring-Software
+                (z.B. Nagios) beschr&auml;nken m&ouml;chte.</p>
+
+                <p><i>Deaktiviert</i>: Der Zugriff auf Statusinformationen wird nur von NagVis beschr&auml;nkt. Jeder NagVis-Benutzer,
+                der Zugriff auf eine Map hat kann die Statusinformationen aller Objekte auf dieser Map sehen.
+                Falls er die Erlaubnis hat Objekte zu der Map hinzuzuf&uuml;gen kann er ALLE Monitoring-Objekte hinzuf&uuml;gen und wird
+                dabei nicht durch das NagVis-Rechtesystem eingeschr&auml;nkt.</p>
+
+                <p><i>Aktiviert</i>: Jeder Benutzer in NagVis kann nur die Statusinformationen sehen f&uuml;r deren Objekte er
+                auch eine Kontaktdefinition in der Monitoring-Software hat. Das bedeutet, dass er Statusinformationen
+                nur dann sehen kann, wenn er Zugriff auf eine Map hat UND wenn er die Erlaubnis des Monitoring-Systems hat.
+                Das gleiche gilt f&uuml;r das Hinzuf&uuml;gen von Objekten zu einer Map.</p>
+            </td>
+        </tr>
+
         <tr>
             <td>refreshtime</td><td>60</td><td>Aktualisierungsintervall in Maps bzw. laden der n&auml;chsten Map bei Map-Rotation</td>
         </tr>
@@ -169,7 +183,7 @@
             <td>sesscookiepath</td><td>automatisch ermittelt</td><td>Vielleicht m&ouml;chten Sie den Pfad festlegen, f&uuml;r den NagVis das Session-Cookie speichern soll. Per Default versucht NagVis, den Wert mit Hilfe der paths/htmlbase-Variablen selbst zu ermitteln. Dies sollte in den meisten Umgebungen funktionieren, k&ouml;nnte sich aber z.B. durch URL-Rewriting &auml;ndern.</td>
         </tr>
         <tr>
-            <td>sesscookieduration</td><td>86400</td><td> Lebensdauer des Cookies in Sekunden. Der Standardwert ist auf 24 Stunden eingestellt. Das NagVis-Session-Cookie wird bei jedem Seitenaufruf erneuert. Wenn eine Session länger als die eingestellte Zeit unt&auml;tig ist, wird sie ung&uuml;ltig.</td>
+            <td>sesscookieduration</td><td>86400</td><td> Lebensdauer des Cookies in Sekunden. Der Standardwert ist auf 24 Stunden eingestellt. Das NagVis-Session-Cookie wird bei jedem Seitenaufruf erneuert. Wenn eine Session l&auml;nger als die eingestellte Zeit unt&auml;tig ist, wird sie ung&uuml;ltig.</td>
         </tr>
         <tr>
             <td>startmodule</td><td>overview</td><td>Das anzuzeigende Startmodul, wenn vom Benutzer keins angegeben wird.</td>
@@ -263,7 +277,7 @@
             <td> eventlog     </td><td> 0 </td><td> aktivieren (1) bzw. deaktivieren (0) des Ereignisprotokolls im neuen JavaScript-Frontend. Das Ereignisprotokoll enth&auml;lt wichtige Aktionen und Informationen</td>
         </tr>
         <tr>
-            <td>eventlogevents</td><td>24</td><td>Anzahl von Ereignissen im Ereignisprotokoll-Rückblick</td>
+            <td>eventlogevents</td><td>24</td><td>Anzahl von Ereignissen im Ereignisprotokoll-R&uuml;ckblick</td>
         </tr>
         <tr>
             <td> eventloglevel     </td><td> info </td><td> Loglevel des Ereignisprotokolls (verf&uuml;gbar: debug, info, warning, critical)</td>
@@ -279,9 +293,6 @@
         </tr>
         <tr>
             <td> eventsound     </td><td> 1 </td><td> aktivieren (1) bzw. deaktivieren (0) von Sound-Signalen bei Status&auml;nderungen</td>
-        </tr>
-        <tr>
-            <td> headerfade     </td><td> 0 </td><td>aktivieren/deaktivieren des Abblendeffekts in den Untermen&uuml;s des Header-Men&uuml;s (wenn das verwendete Header-Men&uuml; diese Option unterst&uuml;tzt).</td>
         </tr>
         <tr>
             <td>headermenu</td><td>1</td><td>aktivieren (1) bzw. deaktivieren (0) des Headermen&uuml;s</a></td>
@@ -379,7 +390,7 @@
             <td>backgroundcolor</td><td>#ffffff</td><td>Default-Hintergrundfarbe f&uuml;r die &Uuml;bersichtsseite</td>
         </tr>
         <tr>
-            <td>cellsperrow</td><td>4</td><td>Maps pro Zeile in Map-Listen.</td>
+            <td><strike>cellsperrow</strike></td><td>4</td><td>Maps pro Zeile in Map-Listen. (<font color="#ff0000">veraltet ab 1.8</font>)</td>
         </tr>
         <tr>
             <td>headermenu</td><td>1</td><td>aktivieren (1) bzw. deaktivieren (0) des Headermen&uuml;s</a></td>
@@ -581,7 +592,7 @@
         <tr> <td>error_downtime</td><td>2</td>     </tr>
         <tr> <td>ok</td><td>1</td>     </tr>
         <tr> <td>up</td><td>1</td>     </tr>    
-        <tr><td>unchecked <font color="#ff0000">(neu in 1.6)</font></td><td>0</td></tr>
+        <tr><td>unchecked</td><td>0</td></tr>
         <tr> <td>pending</td><td>0</td>     </tr>
     </table>
     
@@ -630,9 +641,9 @@
         <tr><td>up_bgcolor</td><td>#00FF00</td></tr>
         <tr><td>up_color</td><td>#00FF00</td></tr>
         <tr><td>up_sound</td><td></td></tr>
-        <tr><td>unchecked_bgcolor <font color="#ff0000">(neu in 1.6)</font></td><td>#C0C0C0</td></tr>
-        <tr><td>unchecked_color <font color="#ff0000">(neu in 1.6)</font></td><td>#C0C0C0</td></tr>
-        <tr><td>unchecked_sound <font color="#ff0000">(neu in 1.6)</font></td><td></td></tr>
+        <tr><td>unchecked_bgcolor</td><td>#C0C0C0</td></tr>
+        <tr><td>unchecked_color</td><td>#C0C0C0</td></tr>
+        <tr><td>unchecked_sound</td><td></td></tr>
         <tr><td>pending_bgcolor</td><td>#C0C0C0</td></tr>
         <tr><td>pending_color</td><td>#C0C0C0</td></tr>
         <tr><td>pending_sound</td><td></td></tr>

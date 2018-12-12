@@ -4,7 +4,7 @@
  * NagVisObject.php - Abstract class of an object in NagVis with all necessary
  *                  information which belong to the object handling in NagVis
  *
- * Copyright (c) 2004-2011 NagVis Project (Contact: info@nagvis.org)
+ * Copyright (c) 2004-2016 NagVis Project (Contact: info@nagvis.org)
  *
  * License:
  *
@@ -24,16 +24,11 @@
  *****************************************************************************/
 
 /**
- * @author	Lars Michelsen <lars@vertical-visions.de>
+ * @author	Lars Michelsen <lm@larsmichelsen.com>
  */
 class NagVisObject {
-    protected $CORE;
+    protected $conf = array();
 
-    protected $conf;
-
-    // "Global" Configuration variables for all objects
-    // Highly used and therefor public to prevent continous getter calls
-    public $type;
     protected $object_id;
     protected $x;
     protected $y;
@@ -54,20 +49,13 @@ class NagVisObject {
     protected static $stateWeight = null;
     private static $arrDenyKeys = null;
 
-    public function __construct($CORE) {
-        $this->CORE = $CORE;
-
-        // Initialize object_id (Should be overriden later)
-        //$this->object_id = rand(0, 1000);
-
-        $this->conf = Array();
-    }
+    public function __construct() {}
 
     /**
      * Get method for all options
      *
      * @return	Value  Value of the given option
-     * @author	Lars Michelsen <lars@vertical-visions.de>
+     * @author	Lars Michelsen <lm@larsmichelsen.com>
      */
     public function get($option) {
         return $this->{$option};
@@ -77,7 +65,7 @@ class NagVisObject {
      * Get method for x coordinate of the object
      *
      * @return	Integer		x coordinate on the map
-     * @author	Lars Michelsen <lars@vertical-visions.de>
+     * @author	Lars Michelsen <lm@larsmichelsen.com>
      */
     public function getX() {
         return $this->x;
@@ -87,7 +75,7 @@ class NagVisObject {
      * Get method for y coordinate of the object
      *
      * @return	Integer		y coordinate on the map
-     * @author	Lars Michelsen <lars@vertical-visions.de>
+     * @author	Lars Michelsen <lm@larsmichelsen.com>
      */
     public function getY() {
         return $this->y;
@@ -97,7 +85,7 @@ class NagVisObject {
      * Get method for z coordinate of the object
      *
      * @return	Integer		z coordinate on the map
-     * @author	Lars Michelsen <lars@vertical-visions.de>
+     * @author	Lars Michelsen <lm@larsmichelsen.com>
      */
     public function getZ() {
         return $this->z;
@@ -107,7 +95,7 @@ class NagVisObject {
      * Get method for type of the object
      *
      * @return	String		Type of the object
-     * @author	Lars Michelsen <lars@vertical-visions.de>
+     * @author	Lars Michelsen <lm@larsmichelsen.com>
      */
     public function getType() {
         return $this->type;
@@ -119,7 +107,7 @@ class NagVisObject {
      * Get method for the object id
      *
      * @return	Integer		Object ID
-     * @author	Lars Michelsen <lars@vertical-visions.de>
+     * @author	Lars Michelsen <lm@larsmichelsen.com>
      */
     public function getObjectId() {
         return $this->object_id;
@@ -131,7 +119,7 @@ class NagVisObject {
      * Set method for the object id
      *
      * @param   Integer    Object id to set for the object
-     * @author  Lars Michelsen <lars@vertical-visions.de>
+     * @author  Lars Michelsen <lm@larsmichelsen.com>
      */
     public function setObjectId($id) {
         $this->object_id = $id;
@@ -141,21 +129,34 @@ class NagVisObject {
      * Get method for the name of the object
      *
      * @return	String		Name of the object
-     * @author	Lars Michelsen <lars@vertical-visions.de>
+     * @author	Lars Michelsen <lm@larsmichelsen.com>
      */
     public function getName() {
-        if($this->type == 'service') {
+        if($this->type == 'dyngroup' || $this->type == 'aggr') {
+            return $this->name;
+        } elseif ($this->type == 'service') {
             return $this->host_name;
         } else {
             return $this->{$this->type.'_name'};
         }
     }
 
+    // Returns the display_name of an object, if available, otherwise
+    // the alias of an object, if available, otherwise the name
+    public function getDisplayName() {
+        if (isset($this->state[DISPLAY_NAME]) && $this->state[DISPLAY_NAME] != '')
+            return $this->state[DISPLAY_NAME];
+        elseif (isset($this->state[ALIAS]))
+            return $this->state[ALIAS];
+        else
+            return $this->getName();
+    }
+
     /**
      * Get method for the hover template of the object
      *
      * @return	String		Hover template of the object
-     * @author	Lars Michelsen <lars@vertical-visions.de>
+     * @author	Lars Michelsen <lm@larsmichelsen.com>
      */
     public function getHoverTemplate() {
         return $this->hover_template;
@@ -165,7 +166,7 @@ class NagVisObject {
      * Set method for the object coords
      *
      * @return	Array		Array of the objects coords
-     * @author	Lars Michelsen <lars@vertical-visions.de>
+     * @author	Lars Michelsen <lm@larsmichelsen.com>
      */
     public function setMapCoords($arrCoords) {
         $this->setConfiguration($arrCoords);
@@ -176,11 +177,10 @@ class NagVisObject {
      *
      * Sets options of the object
      *
-     * @author	Lars Michelsen <lars@vertical-visions.de>
+     * @author	Lars Michelsen <lm@larsmichelsen.com>
      */
     public function setConfiguration($obj) {
         foreach($obj AS $key => $val) {
-            $this->conf[$key] = $val;
             $this->{$key} = $val;
         }
     }
@@ -190,25 +190,11 @@ class NagVisObject {
      *
      * Sets extended information of the object
      *
-     * @author	Lars Michelsen <lars@vertical-visions.de>
+     * @author	Lars Michelsen <lm@larsmichelsen.com>
      */
     public function setObjectInformation($obj) {
         foreach($obj AS $key => $val) {
             $this->{$key} = $val;
-        }
-    }
-
-    protected function numMembers() {
-        // Save the number of members
-        switch($this->type) {
-            case 'host':
-            case 'hostgroup':
-            case 'servicegroup':
-                return $this->getNumMembers();
-            break;
-            case 'map':
-                return $this->getNumStatefulMembers();
-            break;
         }
     }
 
@@ -218,9 +204,10 @@ class NagVisObject {
      * Gets all necessary information of the object as array
      *
      * @return	Array		Object configuration
-     * @author 	Lars Michelsen <lars@vertical-visions.de>
+     * @author 	Lars Michelsen <lm@larsmichelsen.com>
      */
     public function getObjectInformation($bFetchChilds = true) {
+        global $CORE;
         $arr = Array();
 
         // When the childs don't need to be fetched this object is a child
@@ -234,7 +221,7 @@ class NagVisObject {
         // FIXME: Would be much better to name the needed vars explicit
         if(self::$arrDenyKeys == null)
             self::$arrDenyKeys = Array(
-              'CORE' => '', 'BACKEND' => '', 'MAPCFG' => '', 'MAP'  => '', 'GRAPHIC' => '',
+                'MAPCFG' => '', 'MAP'  => '',
                 'conf' => '', 'services' => '', 'fetchedChildObjects' => '', 'childObjects' => '',
                 'parentObjects' => '', 'members' => '', 'objects' => '', 'linkedMaps' => '',
                 'isSummaryObject' => '', 'isView' => '', 'dateFormat' => '', 'arrDenyKeys' => '',
@@ -245,78 +232,14 @@ class NagVisObject {
             if(!isset(self::$arrDenyKeys[$key]) && $val !== null)
                 $arr[$key] = $val;
 
-        $num_members = $this->numMembers();
-        if($num_members !== null)
-            $arr['num_members'] = $this->numMembers();
-
-        /**
-         * FIXME: Find another place for that! This is a bad place for language strings!
-         */
-
         if($this instanceof NagVisStatefulObject) {
-            switch($this->type) {
-                case 'host':
-                    if(NagVisHost::$langType === null) {
-                        NagVisHost::$langType  = l('host');
-                        NagVisHost::$langSelf  = l('hostname');
-                        NagVisHost::$langChild = l('servicename');
-                    }
-
-                    $arr['lang_obj_type']    = NagVisHost::$langType;
-                    $arr['lang_name']        = NagVisHost::$langSelf;
-                    $arr['lang_child_name']  = NagVisHost::$langChild;
-                break;
-                case 'service':
-                    if(NagVisService::$langType === null) {
-                        NagVisService::$langType  = l('service');
-                        NagVisService::$langSelf  = l('servicename');
-                    }
-                    if(NagVisHost::$langType === null)
-                        NagVisHost::$langSelf = l('hostname');
-
-                    $arr['lang_obj_type']    = NagVisService::$langType;
-                    $arr['lang_name']        = NagVisHost::$langSelf;
-                break;
-                case 'hostgroup':
-                    if(NagVisHostgroup::$langType === null) {
-                        NagVisHostgroup::$langType  = l('hostgroup');
-                        NagVisHostgroup::$langSelf  = l('hostgroupname');
-                        NagVisHostgroup::$langChild = l('hostname');
-                    }
-
-                    $arr['lang_obj_type']    = NagVisHostgroup::$langType;
-                    $arr['lang_name']        = NagVisHostgroup::$langSelf;
-                    $arr['lang_child_name']  = NagVisHostgroup::$langChild;
-                break;
-                case 'servicegroup':
-                    if(NagVisServicegroup::$langType === null) {
-                        NagVisServicegroup::$langType   = l('servicegroup');
-                        NagVisServicegroup::$langSelf   = l('servicegroupname');
-                        NagVisServicegroup::$langChild  = l('servicename');
-                        NagVisServicegroup::$langChild1 = l('hostname');
-                    }
-
-                    $arr['lang_obj_type']     = NagVisServicegroup::$langType;
-                    $arr['lang_name']         = NagVisServicegroup::$langSelf;
-                    $arr['lang_child_name']   = NagVisServicegroup::$langChild;
-                    $arr['lang_child_name1']  = NagVisServicegroup::$langChild1;
-                break;
-                case 'map':
-                    if(NagVisMapObj::$langType === null) {
-                        NagVisMapObj::$langType   = l('map');
-                        NagVisMapObj::$langSelf   = l('mapname');
-                        NagVisMapObj::$langChild  = l('objectname');
-                    }
-
-                    $arr['lang_obj_type']    = NagVisMapObj::$langType;
-                    $arr['lang_name']        = NagVisMapObj::$langSelf;
-                    $arr['lang_child_name']  = NagVisMapObj::$langChild;
-                break;
-            }
+            $num_members = $this->getNumMembers();
+            if($num_members !== null)
+                $arr['num_members'] = $num_members;
         }
 
         // I want only "name" in js
-        if(!isset($this->CORE->statelessObjectTypes[$this->type])) {
+        if(!isset($CORE->statelessObjectTypes[$this->type])) {
             $arr['name'] = $this->getName();
 
             if($this->type == 'service') {
@@ -325,28 +248,45 @@ class NagVisObject {
                 unset($arr[$this->type.'_name']);
             }
 
-            if(isset($this->alias) && $this->alias != '') {
-                $arr['alias'] = $this->alias;
-            } else {
-                $arr['alias'] = '';
-            }
-
-            if(isset($this->display_name) && $this->display_name != '') {
-                $arr['display_name'] = $this->display_name;
-            } else {
-                $arr['display_name'] = '';
+            if ($this->type == 'host' || $this->type == 'service') {
+                $obj_attrs = array(
+                    'alias'         => ALIAS,
+                    'display_name'  => DISPLAY_NAME,
+                    'address'       => ADDRESS,
+                    'notes'         => NOTES,
+                    'check_command' => CHECK_COMMAND,
+                );
+                foreach ($obj_attrs AS $attr => $state_key) {
+                    if (isset($this->state[$state_key]) && $this->state[$state_key] != '')
+                        $arr[$attr] = $this->state[$state_key];
+                    else
+                        $arr[$attr] = '';
+                }
+            } elseif ($this->type == 'map'
+                      || $this->type == 'servicegroup'
+                      || $this->type == 'hostgroup'
+                      || $this->type == 'aggregation') {
+                if (isset($this->state[ALIAS]))
+                    $arr['alias'] = $this->state[ALIAS];
+                else
+                    $arr['alias'] = '';
             }
 
             // Add the custom htmlcgi path for the object
-            $arr['htmlcgi'] = cfg('backend_'.$this->backend_id, 'htmlcgi');
-            $arr['custom_1'] = cfg('backend_'.$this->backend_id, 'custom_1');
-            $arr['custom_2'] = cfg('backend_'.$this->backend_id, 'custom_2');
-            $arr['custom_3'] = cfg('backend_'.$this->backend_id, 'custom_3');
-
-            if(cfg('backend_'.$this->backend_id,'backendtype') == 'ndomy') {
-                $arr['backend_instancename'] = cfg('backend_'.$this->backend_id,'dbinstancename');
-            } else {
-                $arr['backend_instancename'] = '';
+            $i = 0;
+            foreach($this->backend_id as $backend_id) {
+                if($i == 0) {
+                    $arr['htmlcgi']  = cfg('backend_'.$backend_id, 'htmlcgi');
+                    $arr['custom_1'] = cfg('backend_'.$backend_id, 'custom_1');
+                    $arr['custom_2'] = cfg('backend_'.$backend_id, 'custom_2');
+                    $arr['custom_3'] = cfg('backend_'.$backend_id, 'custom_3');
+                } else {
+                    $arr['htmlcgi_'.$i]  = cfg('backend_'.$backend_id, 'htmlcgi');
+                    $arr['custom_1_'.$i] = cfg('backend_'.$backend_id, 'custom_1');
+                    $arr['custom_2_'.$i] = cfg('backend_'.$backend_id, 'custom_2');
+                    $arr['custom_3_'.$i] = cfg('backend_'.$backend_id, 'custom_3');
+                }
+                $i++;
             }
 
             // Little hack: Overwrite the options with correct state information
@@ -371,7 +311,7 @@ class NagVisObject {
      * Gets an array of member objects
      *
      * @return	Array		Member object information
-     * @author 	Lars Michelsen <lars@vertical-visions.de>
+     * @author 	Lars Michelsen <lm@larsmichelsen.com>
      */
     public function getSortedObjectMembers() {
         $arr = Array();
@@ -386,6 +326,9 @@ class NagVisObject {
             case 's':
                 // Order by State
                 usort($aTmpMembers, Array("NagVisObject", "sortObjectsByState"));
+            break;
+            case 'k':
+                // Keep original order (as provided by backend)
             break;
             case 'a':
             default:
@@ -411,7 +354,7 @@ class NagVisObject {
      * Gets the configuration of the object
      *
      * @return	Array		Object configuration
-     * @author 	Lars Michelsen <lars@vertical-visions.de>
+     * @author 	Lars Michelsen <lm@larsmichelsen.com>
      */
     public function getObjectConfiguration($abstract = true) {
         // Some options have to be removed which are only for this object
@@ -437,7 +380,7 @@ class NagVisObject {
      * Parses the object in json format
      *
      * @return	String  JSON code of the object
-     * @author	Lars Michelsen <lars@vertical-visions.de>
+     * @author	Lars Michelsen <lm@larsmichelsen.com>
      */
     public function parseJson() {
         return $this->getObjectInformation();
@@ -450,7 +393,7 @@ class NagVisObject {
      *
      * @param   Array   Array of global map options
      * @return	String  This object in map config format
-     * @author	Lars Michelsen <lars@vertical-visions.de>
+     * @author	Lars Michelsen <lm@larsmichelsen.com>
      */
     public function parseMapCfg($globalOpts = Array()) {
         $ret = 'define '.$this->type." {\n";
@@ -489,7 +432,7 @@ class NagVisObject {
      * Returns the target frame for the object link
      *
      * @return	String	Target
-     * @author 	Lars Michelsen <lars@vertical-visions.de>
+     * @author 	Lars Michelsen <lm@larsmichelsen.com>
      */
     protected function getUrlTarget() {
         return $this->url_target;
@@ -502,7 +445,7 @@ class NagVisObject {
      *
      * @param	OBJ		First object to sort
      * @param	OBJ		Second object to sort
-     * @author 	Lars Michelsen <lars@vertical-visions.de>
+     * @author 	Lars Michelsen <lm@larsmichelsen.com>
      */
     private static function sortObjectsAlphabetical($OBJ1, $OBJ2) {
         if($OBJ1->type == 'service') {
@@ -543,37 +486,44 @@ class NagVisObject {
      *
      * @param	OBJ		First object to sort
      * @param	OBJ		Second object to sort
-     * @author 	Lars Michelsen <lars@vertical-visions.de>
+     * @author 	Lars Michelsen <lm@larsmichelsen.com>
      */
     private static function sortObjectsByState($OBJ1, $OBJ2) {
-        $state1 = $OBJ1->summary_state;
-        $state2 = $OBJ2->summary_state;
+        $state1 = $OBJ1->sum[STATE];
+        $subState1 = $OBJ1->getSubState(SUMMARY_STATE);
+
+        $state2 = $OBJ2->sum[STATE];
+        $subState2 = $OBJ2->getSubState(SUMMARY_STATE);
+
+        return NagVisObject::sortStatesByStateValues($state1, $subState1, $state2, $subState2, self::$sSortOrder);
+    }
+
+    /**
+     * Helper to sort states independent of objects
+     */
+    public static function sortStatesByStateValues($state1, $subState1, $state2, $subState2, $sortOrder) {
+        global $_MAINCFG;
 
         // Quit when nothing to compare
-        if($state1 == '' || $state2 == '') {
+        if($state1 === null || $state2 === null) {
             return 0;
         }
 
-        if(NagVisObject::$stateWeight === null)
-            NagVisObject::$stateWeight = $OBJ1->CORE->getMainCfg()->getStateWeight();
+        $stateWeight = $_MAINCFG->getStateWeight();
 
         // Handle normal/ack/downtime states
-
-        $stubState1 = $OBJ1->getSubState(SUMMARY_STATE);
-        $stubState2 = $OBJ2->getSubState(SUMMARY_STATE);
-
-        if(NagVisObject::$stateWeight[$state1][$stubState1] == NagVisObject::$stateWeight[$state2][$stubState2]) {
+        if($stateWeight[$state1][$subState1] == $stateWeight[$state2][$subState2]) {
             return 0;
-        } elseif(NagVisObject::$stateWeight[$state1][$stubState1] < NagVisObject::$stateWeight[$state2][$stubState2]) {
+        } elseif($stateWeight[$state1][$subState1] < $stateWeight[$state2][$subState2]) {
             // Sort depending on configured direction
-            if(self::$sSortOrder === 'asc') {
+            if($sortOrder === 'asc') {
                 return +1;
             } else {
                 return -1;
             }
         } else {
             // Sort depending on configured direction
-            if(self::$sSortOrder === 'asc') {
+            if($sortOrder === 'asc') {
                 return -1;
             } else {
                 return +1;

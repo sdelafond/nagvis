@@ -3,7 +3,7 @@
  *
  * debug.php - Some functions for debugging
  *
- * Copyright (c) 2004-2011 NagVis Project (Contact: info@nagvis.org)
+ * Copyright (c) 2004-2016 NagVis Project (Contact: info@nagvis.org)
  *
  * License:
  *
@@ -23,7 +23,7 @@
  *****************************************************************************/
  
 /**
- * @author	Lars Michelsen <lars@vertical-visions.de>
+ * @author	Lars Michelsen <lm@larsmichelsen.com>
  */
  
 // Save the start time of NagVis
@@ -34,7 +34,7 @@ define('DEBUGSTART',microtime_float());
  * Writes the debug output to the debug file
  *
  * @param		String		Debug message
- * @author 	Lars Michelsen <lars@vertical-visions.de>
+ * @author 	Lars Michelsen <lm@larsmichelsen.com>
  */
 function debug($msg) {
 	$fh = fopen(DEBUGFILE, 'a');
@@ -45,19 +45,24 @@ function debug($msg) {
 /**
  * Writes the render time and the called URI to the debug file
  *
- * @author 	Lars Michelsen <lars@vertical-visions.de>
+ * @author 	Lars Michelsen <lm@larsmichelsen.com>
  */
 function debugFinalize() {
-	debug('###########################################################');
-	debug('Render Time: '.(microtime_float()-DEBUGSTART).' URI: '.$_SERVER['REQUEST_URI']);
-	debug('###########################################################');
+	debug('==> Render Time: '.round((microtime_float() - DEBUGSTART), 2).'sec'
+             .' Mem peak: '.round(memory_get_peak_usage()/1024/1024, 2).'Mb'
+             .' URI: '.$_SERVER['REQUEST_URI']);
+}
+
+function log_mem($txt = 'somewhere') {
+    if (DEBUG && DEBUGLEVEL & 2)
+        debug('mem ['.$txt.']: ' . round(memory_get_usage()/1024/1024, 2) . 'Mb');
 }
 
 /**
  * Returns the current time in microtime as float
  *
  * @return	Float		Microtime
- * @author 	Lars Michelsen <lars@vertical-visions.de>
+ * @author 	Lars Michelsen <lm@larsmichelsen.com>
  */
 function microtime_float() {
 	list($usec, $sec) = explode(' ', microtime());

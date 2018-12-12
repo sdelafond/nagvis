@@ -3,7 +3,7 @@
  *
  * GlobalMainCfg.php - Class for handling the main configuration of NagVis
  *
- * Copyright (c) 2004-2011 NagVis Project (Contact: info@nagvis.org)
+ * Copyright (c) 2004-2016 NagVis Project (Contact: info@nagvis.org)
  *
  * License:
  *
@@ -22,8 +22,20 @@
  *
  *****************************************************************************/
 
+function listMultisiteSnapinLayouts() {
+    return Array(
+        'tree' => l('Show the map tree'),
+        'list' => l('Show a flat list'),
+    );
+}
+
+function listAvailableLanguages() {
+    global $CORE;
+    return $CORE->getAvailableLanguages();
+}
+
 /**
- * @author	Lars Michelsen <lars@vertical-visions.de>
+ * @author	Lars Michelsen <lm@larsmichelsen.com>
  */
 class GlobalMainCfg {
     private $useCache = true;
@@ -43,16 +55,17 @@ class GlobalMainCfg {
      * Class Constructor
      *
      * @param	Array $configFile    List of paths to configuration files
-     * @author Lars Michelsen <lars@vertical-visions.de>
+     * @author Lars Michelsen <lm@larsmichelsen.com>
      */
     public function __construct() {
         $this->validConfig = Array(
             'global' => Array(
                 'audit_log' => Array(
-                    'must'     => 0,
-                    'editable' => 1,
-                    'default'  => 0,
-                    'match'    => MATCH_BOOLEAN
+                    'must'       => 0,
+                    'editable'   => 1,
+                    'default'    => 0,
+                    'match'      => MATCH_BOOLEAN,
+                    'field_type' => 'boolean',
                 ),
                 'authmodule' => Array('must' => 1,
                     'editable' => 1,
@@ -73,12 +86,24 @@ class GlobalMainCfg {
                     'match'         => MATCH_STRING_PATH,
                 ),
 
-                'controls_size' => Array(
-		    'must'     => 1,
-                    'editable' => 1,
-                    'default'  => 10,
-                    'match'    => MATCH_INTEGER
+                'authorisation_group_perms_file' => Array(
+                    'must'          => 0,
+                    'editable'      => 1,
+                    'default'       => '',
+                    'depends_on'    => 'authorisationmodule',
+                    'depends_value' => 'CoreAuthorisationModGroup',
+                    'match'         => MATCH_STRING_PATH,
                 ),
+                'authorisation_group_backends' => Array(
+                    'must'          => 0,
+                    'editable'      => 1,
+                    'default'       => array(),
+                    'array'         => true,
+                    'depends_on'    => 'authorisationmodule',
+                    'depends_value' => 'CoreAuthorisationModGroup',
+                    'match'         => MATCH_STRING_NO_SPACE,
+                ),
+
                 'dateformat' => Array(
                     'must'     => 1,
                     'editable' => 1,
@@ -87,22 +112,25 @@ class GlobalMainCfg {
                 ),
 
                 'dialog_ack_sticky' => Array(
-                    'must'     => 1,
-                    'editable' => 1,
-                    'default'  => 1,
-                    'match'    => MATCH_BOOLEAN
+                    'must'       => 1,
+                    'editable'   => 1,
+                    'default'    => 1,
+                    'field_type' => 'boolean',
+                    'match'      => MATCH_BOOLEAN
                 ),
                 'dialog_ack_notify' => Array(
-                    'must'     => 1,
-                    'editable' => 1,
-                    'default'  => 1,
-                    'match'    => MATCH_BOOLEAN
+                    'must'       => 1,
+                    'editable'   => 1,
+                    'default'    => 1,
+                    'field_type' => 'boolean',
+                    'match'      => MATCH_BOOLEAN
                 ),
                 'dialog_ack_persist' => Array(
-                    'must'     => 1,
-                    'editable' => 1,
-                    'default'  => 0,
-                    'match'    => MATCH_BOOLEAN
+                    'must'       => 1,
+                    'editable'   => 1,
+                    'default'    => 0,
+                    'field_type' => 'boolean',
+                    'match'      => MATCH_BOOLEAN
                 ),
 
                 'displayheader' => Array('must' => 1,
@@ -138,7 +166,7 @@ class GlobalMainCfg {
                 ),
                 'http_timeout' => array(
                     'must'    => 1,
-                    'default' => 10,
+                    'default' => 2,
                     'match'   => MATCH_INTEGER,
                 ),
 
@@ -150,13 +178,16 @@ class GlobalMainCfg {
                 'language_available' => Array('must' => 1,
                     'editable' => 1,
                     'array' => true,
-                    'default' => Array('de_DE', 'en_US', 'es_ES', 'fr_FR', 'pt_BR'),
+                    'default' => Array('de_DE', 'en_US', 'es_ES', 'fr_FR', 'pt_BR', 'zh_CN'),
                     'match' => MATCH_STRING_NO_SPACE),
-                'language' => Array('must' => 1,
-                    'editable' => 1,
-                    'default' => 'en_US',
+                'language' => Array(
+                    'must'       => 1,
+                    'editable'   => 1,
+                    'default'    => 'en_US',
                     'field_type' => 'dropdown',
-                    'match' => MATCH_LANGUAGE_EMPTY),
+                    'list'       => 'listAvailableLanguages',
+                    'match'      => MATCH_LANGUAGE_EMPTY
+                ),
                 'logonmodule' => Array('must' => 1,
                     'editable' => 1,
                     'default' => 'LogonMixed',
@@ -223,6 +254,23 @@ class GlobalMainCfg {
                     'match'         => MATCH_STRING
                 ),
 
+                'multisite_snapin_layout' => Array(
+                    'must'        => 0,
+                    'editable'    => 1,
+                    'default'     => 'list',
+                    'match'       => MATCH_STRING_NO_SPACE,
+                    'field_type'  => 'dropdown',
+                    'list'        => 'listMultisiteSnapinLayouts',
+                ),
+
+                'only_permitted_objects' => Array(
+                    'must'       => 0,
+                    'editable'   => 1,
+                    'default'    => 0,
+                    'match'      => MATCH_BOOLEAN,
+                    'field_type' => 'boolean',
+                ),
+
                 'user_filtering' => Array(
                     'must'       => 0,
                     'editable'   => 1,
@@ -248,11 +296,32 @@ class GlobalMainCfg {
                     'editable'    => 1,
                     'default'     => '86400',
                     'match'       => MATCH_STRING),
+                'sesscookiesecure' => Array(
+                    'must'        => 0,
+                    'editable'    => 1,
+                    'default'     => 0,
+                    'field_type'  => 'boolean',
+                    'match'       => MATCH_BOOLEAN
+                ),
+                'sesscookiehttponly' => Array(
+                    'must'        => 0,
+                    'editable'    => 1,
+                    'default'     => 0,
+                    'field_type'  => 'boolean',
+                    'match'       => MATCH_BOOLEAN
+                ),
                 'shinken_features' => Array('must' => 1,
                     'editable'    => 1,
                     'default'     => '0',
                     'field_type'    => 'boolean',
                     'match'         => MATCH_BOOLEAN),
+
+                'staleness_threshold' => Array(
+                    'must'        => 1,
+                    'editable'    => 1,
+                    'default'     => '1.5',
+                    'match'       => MATCH_FLOAT,
+                ),
 
                 'startmodule' => Array('must' => 1,
                     'editable'    => 1,
@@ -265,28 +334,52 @@ class GlobalMainCfg {
                 'startshow'   => Array('must' => 0,
                     'editable'    => 1,
                     'default'     => '',
-                    'match'       => MATCH_STRING_EMPTY)),
+                    'match'       => MATCH_STRING_EMPTY
+                ),
+
+                'worldmap_start_pos' => array(
+                    'editable'    => true,
+                    'default'     => '51.505,-0.09',
+                    'match'       => MATCH_LATLONG,
+                ),
+                'worldmap_start_zoom' => array(
+                    'editable'    => true,
+                    'default'     => 13,
+                    'match'       => MATCH_INTEGER,
+                ),
+            ),
             'defaults' => Array(
-                'backend' => Array('must' => 0,
-                    'editable' => 0,
-                    'default' => 'live_1',
-                    'field_type' => 'dropdown',
-                    'match' => MATCH_STRING_NO_SPACE),
-                'backgroundcolor' => Array('must' => 0,
-                    'editable' => 1,
-                    'default' => 'transparent',
-                    'match' => MATCH_COLOR),
+                'backend' => Array(
+                    'must'        => 0,
+                    'editable'    => 1,
+                    'default'     => array('live_1'),
+                    'array'       => true,
+                    'field_type'  => 'dropdown',
+                    'list'        => 'listBackendIds',
+                    'match'       => MATCH_BACKEND_ID
+                ),
+                'backgroundcolor' => Array(
+                    'must'        => 0,
+                    'editable'    => 1,
+                    'default'     => 'transparent',
+                    'field_type'  => 'color',
+                    'match'       => MATCH_COLOR
+                ),
                 'contextmenu' => Array('must' => 0,
                     'editable' => 1,
                     'default' => 1,
                     'field_type' => 'boolean',
                     'match' => MATCH_BOOLEAN),
-                'contexttemplate' => Array('must' => 0,
-                    'editable' => 1,
-                    'default' => 'default',
-                    'depends_on' => 'contextmenu',
+                'contexttemplate' => Array(
+                    'must'          => 0,
+                    'editable'      => 1,
+                    'default'       => 'default',
+                    'depends_on'    => 'contextmenu',
                     'depends_value' => 1,
-                    'match' => MATCH_STRING_NO_SPACE),
+                    'field_type'    => 'dropdown',
+                    'list'          => 'listContextTemplates',
+                    'match'         => MATCH_STRING_NO_SPACE
+                ),
                 'stylesheet' => Array('must' => 0,
                     'editable' => 1,
                     'default' => '',
@@ -375,36 +468,55 @@ class GlobalMainCfg {
                     'field_type' => 'boolean',
                     'match' => MATCH_BOOLEAN),
 
-                'headermenu' => Array('must' => 1,
-                    'editable' => 1,
-                    'default' => '1',
+                'headermenu' => Array(
+                    'must'       => 1,
+                    'editable'   => 1,
+                    'default'    => '1',
                     'field_type' => 'boolean',
-                    'match' => MATCH_BOOLEAN),
-                'headertemplate' => Array('must' => 0,
-                    'editable' => 1,
-                    'default' => 'default',
-                    'depends_on' => 'headermenu',
+                    'match'      => MATCH_BOOLEAN
+                ),
+                'headertemplate' => Array(
+                    'must'          => 0,
+                    'editable'      => 1,
+                    'default'       => 'default',
+                    'depends_on'    => 'headermenu',
                     'depends_value' => 1,
-                    'match' => MATCH_STRING_NO_SPACE),
+                    'field_type'    => 'dropdown',
+                    'list'          => 'listHeaderTemplates',
+                    'match'         => MATCH_STRING_NO_SPACE,
+),
                 'headerfade' => Array(
-                        'must'          => 0,
+                    'must'          => 0,
                     'editable'      => 1,
                     'default'       => 0,
                     'depends_on'    => 'headermenu',
                     'depends_value' => 1,
+                    'field_type'    => 'boolean',
+                    'deprecated'    => 1,
                     'match'         => MATCH_BOOLEAN
+                ),
+                'header_show_states' => Array(
+                    'must'       => 1,
+                    'editable'   => 1,
+                    'default'    => 1,
+                    'field_type' => 'boolean',
+                    'match'      => MATCH_BOOLEAN
                 ),
                 'hovermenu' => Array('must' => 0,
                     'editable' => 1,
                     'default' => '1',
                     'field_type' => 'boolean',
                     'match' => MATCH_BOOLEAN),
-                'hovertemplate' => Array('must' => 0,
-                    'editable' => 1,
-                    'default' => 'default',
-                    'depends_on' => 'hovermenu',
+                'hovertemplate' => Array(
+                    'must'          => 0,
+                    'editable'      => 1,
+                    'default'       => 'default',
+                    'depends_on'    => 'hovermenu',
                     'depends_value' => 1,
-                    'match' => MATCH_STRING_NO_SPACE),
+                    'field_type'    => 'dropdown',
+                    'list'          => 'listHoverTemplates',
+                    'match'         => MATCH_STRING_NO_SPACE,
+                ),
                 'hovertimeout' => Array('must' => 0,
                     'editable' => 1,
                     'default' => '5',
@@ -429,23 +541,41 @@ class GlobalMainCfg {
                     'depends_on' => 'hovermenu',
                     'depends_value' => 1,
                     'match' => MATCH_INTEGER_PRESIGN),
-                'hoverchildsorder' => Array('must' => 0,
-                    'editable' => 1,
-                    'default' => 'asc',
-                    'depends_on' => 'hovermenu',
+                'hoverchildsorder' => Array(
+                    'must'          => 0,
+                    'editable'      => 1,
+                    'default'       => 'asc',
+                    'depends_on'    => 'hovermenu',
                     'depends_value' => 1,
-                    'match' => MATCH_ORDER),
-                'hoverchildssort' => Array('must' => 0,
-                    'editable' => 1,
-                    'default' => 's',
-                    'depends_on' => 'hovermenu',
+                    'field_type'    => 'dropdown',
+                    'list'          => 'listHoverChildOrders',
+                    'match'         => MATCH_ORDER
+                ),
+                'hoverchildssort' => Array(
+                    'must'          => 0,
+                    'editable'      => 1,
+                    'default'       => 's',
+                    'depends_on'    => 'hovermenu',
                     'depends_value' => 1,
-                    'match' => MATCH_STRING_NO_SPACE),
-                'icons' => Array('must' => 1,
-                    'editable' => 1,
-                    'default' => 'std_medium',
+                    'field_type'    => 'dropdown',
+                    'list'          => 'listHoverChildSorters',
+                    'match'         => MATCH_STRING_NO_SPACE,
+                ),
+                'icons' => Array(
+                    'must'       => 1,
+                    'editable'   => 1,
+                    'default'    => 'std_medium',
                     'field_type' => 'dropdown',
-                    'match' => MATCH_STRING_NO_SPACE),
+                    'list'       => 'listIconsets',
+                    'match'      => MATCH_STRING_NO_SPACE
+                ),
+                'icon_size' => Array(
+                    'must'       => 1,
+                    'editable'   => 1,
+                    'default'    => array(),
+                    'match'      => MATCH_INTEGER,
+                    'array'    => true,
+                ),
                 'onlyhardstates' => Array('must' => 0,
                     'editable' => 1,
                     'default' => 0,
@@ -485,6 +615,36 @@ class GlobalMainCfg {
                 'servicegroupurl' => Array('must' => 0,
                     'default' => '[htmlcgi]/status.cgi?servicegroup=[servicegroup_name]&style=detail',
                     'match' => MATCH_STRING_URL_EMPTY),
+                'dyngroupurl' => Array(
+                    'must'    => 0,
+                    'default' => '',
+                    'match'   => MATCH_STRING_URL_EMPTY
+                ),
+                'aggrurl' => Array(
+                    'must'    => 0,
+                    'default' => '',
+                    'match'   => MATCH_STRING_URL_EMPTY
+                ),
+                'host_downtime_url' => Array(
+                    'must'    => 0,
+                    'default' => '[html_cgi]/cmd.cgi?cmd_typ=55&host=[name]',
+                    'match'   => MATCH_STRING_URL_EMPTY
+                ),
+                'host_ack_url' => Array(
+                    'must'    => 0,
+                    'default' => '[html_cgi]/cmd.cgi?cmd_typ=96&host=[name]&force_check',
+                    'match'   => MATCH_STRING_URL_EMPTY
+                ),
+                'service_downtime_url' => Array(
+                    'must'    => 0,
+                    'default' => '[html_cgi]/cmd.cgi?cmd_typ=56&host=[name]&service=[service_description]',
+                    'match'   => MATCH_STRING_URL_EMPTY
+                ),
+                'service_ack_url' => Array(
+                    'must'    => 0,
+                    'default' => '[html_cgi]/cmd.cgi?cmd_typ=7&host=[name]&service=[service_description]&force_check',
+                    'match'   => MATCH_STRING_URL_EMPTY
+                ),
                 'view_template' => Array(
                     'must'     => 0,
                     'editable' => 1,
@@ -503,6 +663,20 @@ class GlobalMainCfg {
                     'editable'   => 1,
                     'default'    => '10:#8c00ff,25:#2020ff,40:#00c0ff,55:#00f000,70:#f0f000,85:#ffc000,100:#ff0000',
                     'match'      => MATCH_WEATHER_COLORS,
+                ),
+                'zoombar' => Array(
+                    'must'          => 0,
+                    'editable'      => 1,
+                    'default'       => 0,
+                    'field_type'    => 'boolean',
+                    'match'         => MATCH_BOOLEAN
+                ),
+                'zoom_scale_objects' => array(
+                    'must'          => 0,
+                    'editable'      => 1,
+                    'default'       => 1,
+                    'field_type'    => 'boolean',
+                    'match'         => MATCH_BOOLEAN
                 ),
             ),
             'wui' => Array(
@@ -524,14 +698,17 @@ class GlobalMainCfg {
                     'default' => '1',
                     'field_type' => 'boolean',
                     'match' => MATCH_BOOLEAN),
-                'headertemplate' => Array('must' => 0,
-                    'editable' => 1,
-                    'default' => 'default',
-                    'deprecated' => 1,
-                    'depends_on' => 'headermenu',
+                'headertemplate' => Array(
+                    'must'          => 0,
+                    'editable'      => 1,
+                    'default'       => 'default',
+                    'deprecated'    => 1,
+                    'depends_on'    => 'headermenu',
                     'depends_value' => 1,
-                    'field_type' => 'dropdown',
-                    'match' => MATCH_STRING_NO_SPACE),
+                    'field_type'    => 'dropdown',
+                    'list'          => 'listHeaderTemplates',
+                    'match'         => MATCH_STRING_NO_SPACE
+                ),
                 'maplocktime' => Array('must' => 0,
                     'editable' => 1,
                     'default' => '5',
@@ -546,6 +723,7 @@ class GlobalMainCfg {
                     'depends_on' => 'grid_show',
                     'depends_value' => 1,
                     'default' => '#D5DCEF',
+                    'field_type' => 'color',
                     'match' => MATCH_COLOR),
                 'grid_steps' => Array('must' => 0,
                     'editable' => 1,
@@ -768,10 +946,12 @@ class GlobalMainCfg {
                     'editable' => 1,
                     'default' => '',
                     'match' => MATCH_INTEGER),
-                'maps' => Array('must' => 1,
+                'maps' => Array(
+                    'must'     => 1,
                     'editable' => 1,
-                    'default' => 'demo,demo2',
-                    'match' => MATCH_STRING)),
+                    'default'  => 'demo,demo2',
+                    'match'    => MATCH_STRING_URL)
+                ),
             'action' => Array(
                 'action_type' => Array(
                     'must'     => 1,
@@ -831,18 +1011,23 @@ class GlobalMainCfg {
                 'cellsperrow' => Array('must' => 0,
                     'editable' => 1,
                     'default' => '4',
+                    'deprecated' => 1,
                     'match' => MATCH_INTEGER),
                 'headermenu' => Array('must' => 1,
                     'editable' => 1,
                     'default' => '1',
                     'field_type' => 'boolean',
                     'match' => MATCH_BOOLEAN),
-                'headertemplate' => Array('must' => 0,
-                    'editable' => 1,
-                    'default' => 'default',
-                    'depends_on' => 'headermenu',
+                'headertemplate' => Array(
+                    'must'          => 0,
+                    'editable'      => 1,
+                    'default'       => 'default',
+                    'depends_on'    => 'headermenu',
                     'depends_value' => 1,
-                    'match' => MATCH_STRING_NO_SPACE),
+                    'field_type'    => 'dropdown',
+                    'list'          => 'listHeaderTemplates',
+                    'match'         => MATCH_STRING_NO_SPACE,
+                ),
                 'showautomaps' => Array('must' => 0,
                     'editable' => 1,
                     'default' => 1,
@@ -857,6 +1042,7 @@ class GlobalMainCfg {
                 'showgeomap' => Array('must' => 0,
                     'editable' => 1,
                     'default' => 0,
+                    'deprecated' => 1,
                     'field_type' => 'boolean',
                     'match' => MATCH_BOOLEAN),
                 'showmapthumbs' => Array('must' => 0,
@@ -872,6 +1058,7 @@ class GlobalMainCfg {
                 'backgroundcolor' => Array('must' => 0,
                     'editable' => 1,
                     'default' => '#ffffff',
+                    'field_type' => 'color',
                     'match' => MATCH_COLOR)),
             'worker' => Array(
                 'interval' => Array('must' => 0,
@@ -885,13 +1072,19 @@ class GlobalMainCfg {
                 'requestmaxparams' => Array('must' => 0,
                     'editable' => 1,
                     'default' => 0,
+                    'deprecated' => 1,
                     'match' => MATCH_INTEGER),
                 'requestmaxlength' => Array('must' => 0,
                     'editable' => 1,
                     'default' => 1900,
+                    'deprecated' => 1,
                     'match' => MATCH_INTEGER)),
             'states' => Array(
                 'unreachable' => Array('must' => 1,
+                    'editable' => 1,
+                    'default' => 9,
+                    'match' => MATCH_INTEGER),
+                'unreachable_stale' => Array('must' => 1,
                     'editable' => 1,
                     'default' => 9,
                     'match' => MATCH_INTEGER),
@@ -902,6 +1095,7 @@ class GlobalMainCfg {
                 'unreachable_ack_bgcolor' => Array('must' => 0,
                     'editable' => 1,
                     'default' => '',
+                    'field_type' => 'color',
                     'match' => MATCH_COLOR),
                 'unreachable_downtime' => Array('must' => 1,
                     'editable' => 1,
@@ -910,20 +1104,27 @@ class GlobalMainCfg {
                 'unreachable_downtime_bgcolor' => Array('must' => 0,
                     'editable' => 1,
                     'default' => '',
+                    'field_type' => 'color',
                     'match' => MATCH_COLOR),
                 'unreachable_bgcolor' => Array('must' => 1,
                     'editable' => 1,
                     'default' => '#F1811B',
+                    'field_type' => 'color',
                     'match' => MATCH_COLOR),
                 'unreachable_color' => Array('must' => 1,
                     'editable' => 1,
                     'default' => '#F1811B',
+                    'field_type' => 'color',
                     'match' => MATCH_COLOR),
                 'unreachable_sound' => Array('must' => 0,
                     'editable' => 1,
                     'default' => 'std_unreachable.mp3',
                     'match' => MATCH_MP3_FILE),
                 'down' => Array('must' => 1,
+                    'editable' => 1,
+                    'default' => 10,
+                    'match' => MATCH_INTEGER),
+                'down_stale' => Array('must' => 1,
                     'editable' => 1,
                     'default' => 10,
                     'match' => MATCH_INTEGER),
@@ -934,6 +1135,7 @@ class GlobalMainCfg {
                 'down_ack_bgcolor' => Array('must' => 0,
                     'editable' => 1,
                     'default' => '',
+                    'field_type' => 'color',
                     'match' => MATCH_COLOR),
                 'down_downtime' => Array('must' => 1,
                     'editable' => 1,
@@ -942,20 +1144,27 @@ class GlobalMainCfg {
                 'down_downtime_bgcolor' => Array('must' => 0,
                     'editable' => 1,
                     'default' => '',
+                    'field_type' => 'color',
                     'match' => MATCH_COLOR),
                 'down_bgcolor' => Array('must' => 1,
                     'editable' => 1,
                     'default' => '#FF0000',
+                    'field_type' => 'color',
                     'match' => MATCH_COLOR),
                 'down_color' => Array('must' => 1,
                     'editable' => 1,
                     'default' => '#FF0000',
+                    'field_type' => 'color',
                     'match' => MATCH_COLOR),
                 'down_sound' => Array('must' => 0,
                     'editable' => 1,
                     'default' => 'std_down.mp3',
                     'match' => MATCH_MP3_FILE),
                 'critical' => Array('must' => 1,
+                    'editable' => 1,
+                    'default' => 8,
+                    'match' => MATCH_INTEGER),
+                'critical_stale' => Array('must' => 1,
                     'editable' => 1,
                     'default' => 8,
                     'match' => MATCH_INTEGER),
@@ -966,6 +1175,7 @@ class GlobalMainCfg {
                 'critical_ack_bgcolor' => Array('must' => 0,
                     'editable' => 1,
                     'default' => '',
+                    'field_type' => 'color',
                     'match' => MATCH_COLOR),
                 'critical_downtime' => Array('must' => 1,
                     'editable' => 1,
@@ -974,20 +1184,27 @@ class GlobalMainCfg {
                 'critical_downtime_bgcolor' => Array('must' => 0,
                     'editable' => 1,
                     'default' => '',
+                    'field_type' => 'color',
                     'match' => MATCH_COLOR),
                 'critical_bgcolor' => Array('must' => 1,
                     'editable' => 1,
                     'default' => '#FF0000',
+                    'field_type' => 'color',
                     'match' => MATCH_COLOR),
                 'critical_color' => Array('must' => 1,
                     'editable' => 1,
                     'default' => '#FF0000',
+                    'field_type' => 'color',
                     'match' => MATCH_COLOR),
                 'critical_sound' => Array('must' => 0,
                     'editable' => 1,
                     'default' => 'std_critical.mp3',
                     'match' => MATCH_MP3_FILE),
                 'warning' => Array('must' => 1,
+                    'editable' => 1,
+                    'default' => 7,
+                    'match' => MATCH_INTEGER),
+                'warning_stale' => Array('must' => 1,
                     'editable' => 1,
                     'default' => 7,
                     'match' => MATCH_INTEGER),
@@ -998,6 +1215,7 @@ class GlobalMainCfg {
                 'warning_ack_bgcolor' => Array('must' => 0,
                     'editable' => 1,
                     'default' => '',
+                    'field_type' => 'color',
                     'match' => MATCH_COLOR),
                 'warning_downtime' => Array('must' => 1,
                     'editable' => 1,
@@ -1006,20 +1224,27 @@ class GlobalMainCfg {
                 'warning_downtime_bgcolor' => Array('must' => 0,
                     'editable' => 1,
                     'default' => '',
+                    'field_type' => 'color',
                     'match' => MATCH_COLOR),
                 'warning_bgcolor' => Array('must' => 1,
                     'editable' => 1,
                     'default' => '#FFFF00',
+                    'field_type' => 'color',
                     'match' => MATCH_COLOR),
                 'warning_color' => Array('must' => 1,
                     'editable' => 1,
                     'default' => '#FFFF00',
+                    'field_type' => 'color',
                     'match' => MATCH_COLOR),
                 'warning_sound' => Array('must' => 0,
                     'editable' => 1,
                     'default' => 'std_warning.mp3',
                     'match' => MATCH_MP3_FILE),
                 'unknown' => Array('must' => 1,
+                    'editable' => 1,
+                    'default' => 4,
+                    'match' => MATCH_INTEGER),
+                'unknown_stale' => Array('must' => 1,
                     'editable' => 1,
                     'default' => 4,
                     'match' => MATCH_INTEGER),
@@ -1030,6 +1255,7 @@ class GlobalMainCfg {
                 'unknown_ack_bgcolor' => Array('must' => 0,
                     'editable' => 1,
                     'default' => '',
+                    'field_type' => 'color',
                     'match' => MATCH_COLOR),
                 'unknown_downtime' => Array('must' => 1,
                     'editable' => 1,
@@ -1038,20 +1264,27 @@ class GlobalMainCfg {
                 'unknown_downtime_bgcolor' => Array('must' => 0,
                     'editable' => 1,
                     'default' => '',
+                    'field_type' => 'color',
                     'match' => MATCH_COLOR),
                 'unknown_bgcolor' => Array('must' => 1,
                     'editable' => 1,
                     'default' => '#FFCC66',
+                    'field_type' => 'color',
                     'match' => MATCH_COLOR),
                 'unknown_color' => Array('must' => 1,
                     'editable' => 1,
                     'default' => '#FFCC66',
+                    'field_type' => 'color',
                     'match' => MATCH_COLOR),
                 'unknown_sound' => Array('must' => 0,
                     'editable' => 1,
                     'default' => '',
                     'match' => MATCH_MP3_FILE),
                 'error' => Array('must' => 1,
+                    'editable' => 1,
+                    'default' => 4,
+                    'match' => MATCH_INTEGER),
+                'error_stale' => Array('must' => 1,
                     'editable' => 1,
                     'default' => 4,
                     'match' => MATCH_INTEGER),
@@ -1062,6 +1295,7 @@ class GlobalMainCfg {
                 'error_ack_bgcolor' => Array('must' => 0,
                     'editable' => 1,
                     'default' => '',
+                    'field_type' => 'color',
                     'match' => MATCH_COLOR),
                 'error_downtime' => Array('must' => 1,
                     'editable' => 1,
@@ -1070,20 +1304,27 @@ class GlobalMainCfg {
                 'error_downtime_bgcolor' => Array('must' => 0,
                     'editable' => 1,
                     'default' => '',
+                    'field_type' => 'color',
                     'match' => MATCH_COLOR),
                 'error_bgcolor' => Array('must' => 1,
                     'editable' => 1,
                     'default' => '#0000FF',
+                    'field_type' => 'color',
                     'match' => MATCH_COLOR),
                 'error_color' => Array('must' => 1,
                     'editable' => 1,
                     'default' => '#0000FF',
+                    'field_type' => 'color',
                     'match' => MATCH_COLOR),
                 'error_sound' => Array('must' => 0,
                     'editable' => 1,
                     'default' => '',
                     'match' => MATCH_MP3_FILE),
                 'up' => Array('must' => 1,
+                    'editable' => 1,
+                    'default' => 2,
+                    'match' => MATCH_INTEGER),
+                'up_stale' => Array('must' => 1,
                     'editable' => 1,
                     'default' => 2,
                     'match' => MATCH_INTEGER),
@@ -1094,16 +1335,22 @@ class GlobalMainCfg {
                 'up_bgcolor' => Array('must' => 1,
                     'editable' => 1,
                     'default' => '#00FF00',
+                    'field_type' => 'color',
                     'match' => MATCH_COLOR),
                 'up_color' => Array('must' => 1,
                     'editable' => 1,
                     'default' => '#00FF00',
+                    'field_type' => 'color',
                     'match' => MATCH_COLOR),
                 'up_sound' => Array('must' => 0,
                     'editable' => 1,
                     'default' => '',
                     'match' => MATCH_MP3_FILE),
                 'ok' => Array('must' => 1,
+                    'editable' => 1,
+                    'default' => 1,
+                    'match' => MATCH_INTEGER),
+                'ok_stale' => Array('must' => 1,
                     'editable' => 1,
                     'default' => 1,
                     'match' => MATCH_INTEGER),
@@ -1114,10 +1361,12 @@ class GlobalMainCfg {
                 'ok_bgcolor' => Array('must' => 1,
                     'editable' => 1,
                     'default' => '#00FF00',
+                    'field_type' => 'color',
                     'match' => MATCH_COLOR),
                 'ok_color' => Array('must' => 1,
                     'editable' => 1,
                     'default' => '#00FF00',
+                    'field_type' => 'color',
                     'match' => MATCH_COLOR),
                 'ok_sound' => Array('must' => 0,
                     'editable' => 1,
@@ -1134,10 +1383,12 @@ class GlobalMainCfg {
                 'pending_bgcolor' => Array('must' => 1,
                     'editable' => 1,
                     'default' => '#C0C0C0',
+                    'field_type' => 'color',
                     'match' => MATCH_COLOR),
                 'pending_color' => Array('must' => 1,
                     'editable' => 1,
                     'default' => '#C0C0C0',
+                    'field_type' => 'color',
                     'match' => MATCH_COLOR),
                 'pending_sound' => Array('must' => 0,
                     'editable' => 1,
@@ -1154,10 +1405,12 @@ class GlobalMainCfg {
                 'unchecked_bgcolor' => Array('must' => 1,
                     'editable' => 1,
                     'default' => '#C0C0C0',
+                    'field_type' => 'color',
                     'match' => MATCH_COLOR),
                 'unchecked_color' => Array('must' => 1,
                     'editable' => 1,
                     'default' => '#C0C0C0',
+                    'field_type' => 'color',
                     'match' => MATCH_COLOR),
                 'unchecked_sound' => Array('must' => 0,
                     'editable' => 1,
@@ -1265,34 +1518,41 @@ class GlobalMainCfg {
         $this->PUCACHE = new GlobalFileCache(array_slice($this->configFiles, 0, count($this->configFiles) - 1),
                                              CONST_MAINCFG_CACHE.'-pre-user-'.CONST_VERSION.'-cache'.$cacheSuffix);
 
-  	if($this->CACHE->isCached(false) === -1
-           || $this->PUCACHE->isCached(false) === -1
-           || $this->PUCACHE->getCacheFileAge() < filemtime(CONST_MAINCFG_DIR)) {
-            // The cache is too old. Load all config files
-            foreach($this->configFiles AS $configFile) {
-                // Only proceed when the configuration file exists and is readable
-                if(!GlobalCore::getInstance()->checkExisting($configFile, true)
-                   || !GlobalCore::getInstance()->checkReadable($configFile, true))
-                    return false;
-                $this->readConfig($configFile, true, $configFile == end($this->configFiles));
+        try {
+  	    if($this->CACHE->isCached(false) === -1
+               || $this->PUCACHE->isCached(false) === -1
+               || $this->PUCACHE->getCacheFileAge() < filemtime(CONST_MAINCFG_DIR)) {
+                // The cache is too old. Load all config files
+                foreach($this->configFiles AS $configFile) {
+                    // Only proceed when the configuration file exists and is readable
+                    if(!GlobalCore::getInstance()->checkExisting($configFile, true)
+                       || !GlobalCore::getInstance()->checkReadable($configFile, true))
+                        return false;
+                    $this->readConfig($configFile, true, $configFile == end($this->configFiles));
+                }
+                $this->CACHE->writeCache($this->config, true);
+                if($this->preUserConfig !== null)
+                    $this->PUCACHE->writeCache($this->preUserConfig, true);
+            } else {
+                // Use the cache!
+                $this->config = $this->CACHE->getCache();
+                $this->preUserConfig = $this->PUCACHE->getCache();
             }
-            $this->CACHE->writeCache($this->config, true);
-            if($this->preUserConfig !== null)
-                $this->PUCACHE->writeCache($this->preUserConfig, true);
-        } else {
-            // Use the cache!
-            $this->config = $this->CACHE->getCache();
-            $this->preUserConfig = $this->PUCACHE->getCache();
-        }
 
-        // Update the cache time
-        $this->useCache = $this->CACHE->isCached(false);
+            // Update the cache time
+            $this->useCache = $this->CACHE->isCached(false);
+
+            // want to reduce the paths in the NagVis config, but don't want to hardcode the paths relative from the bases
+            $this->setPathsByBase($this->getValue('paths','base'),$this->getValue('paths','htmlbase'));
+        }
+        catch (Exception $e) {
+            // Try our best to set the correct paths - even in case of exceptions
+            $this->setPathsByBase($this->getValue('paths','base'),$this->getValue('paths','htmlbase'));
+            throw $e;
+        }
 
         // Parse the state weight array
         $this->parseStateWeight();
-
-        // want to reduce the paths in the NagVis config, but don't want to hardcode the paths relative from the bases
-        $this->setPathsByBase($this->getValue('paths','base'),$this->getValue('paths','htmlbase'));
 
         // set default value
         $this->validConfig['rotation']['interval']['default'] = $this->getValue('global','refreshtime');
@@ -1303,7 +1563,7 @@ class GlobalMainCfg {
      * Gets the cookie domain from the webservers environment and sets the
      * session cookie domain to this value
      *
-     * @author 	Lars Michelsen <lars@vertical-visions.de>
+     * @author 	Lars Michelsen <lm@larsmichelsen.com>
      */
     private function setCookieDomainByEnv() {
         if(isset($_SERVER['SERVER_NAME']) && $_SERVER['SERVER_NAME'] !== '') {
@@ -1316,7 +1576,7 @@ class GlobalMainCfg {
      * definitions were moved to the backends so it is easier to create new
      * backends without any need to modify the main configuration
      *
-     * @author 	Lars Michelsen <lars@vertical-visions.de>
+     * @author 	Lars Michelsen <lm@larsmichelsen.com>
      */
     private function getBackendValidConf() {
         // Get the configuration options from the backends
@@ -1341,13 +1601,14 @@ class GlobalMainCfg {
      *
      * @param	Boolean $printErr
      * @return	Boolean	Is Successful?
-     * @author 	Lars Michelsen <lars@vertical-visions.de>
+     * @author 	Lars Michelsen <lm@larsmichelsen.com>
      */
     private function setPathsByBase($base, $htmlBase) {
         $this->validConfig['paths']['cfg']['default']                = $base.'etc/';
         $this->validConfig['paths']['mapcfg']['default']             = $base.'etc/maps/';
         $this->validConfig['paths']['geomap']['default']             = $base.'etc/geomap';
         $this->validConfig['paths']['profiles']['default']           = $base.'etc/profiles';
+        $this->validConfig['global']['authorisation_group_perms_file']['default'] = $base.'etc/perms.db';
 
         $this->validConfig['paths']['var']['default']                = $base.'var/';
         $this->validConfig['paths']['sharedvar']['default']          = $base.HTDOCS_DIR.'/var/';
@@ -1387,7 +1648,7 @@ class GlobalMainCfg {
      *
      * @param	Boolean $printErr
      * @return	Boolean	Is Successful?
-     * @author	Lars Michelsen <lars@vertical-visions.de>
+     * @author	Lars Michelsen <lm@larsmichelsen.com>
      * @author	Roman Kyrylych <rkyrylych@op5.com>
      */
     private function getBasePath() {
@@ -1402,7 +1663,7 @@ class GlobalMainCfg {
      *
      * @param	Boolean $printErr
      * @return	Boolean	Is Successful?
-     * @author 	Lars Michelsen <lars@vertical-visions.de>
+     * @author 	Lars Michelsen <lm@larsmichelsen.com>
      */
     private function readConfig($configFile, $printErr=1, $isUserMainCfg = False) {
         $numComments = 0;
@@ -1578,7 +1839,7 @@ class GlobalMainCfg {
      *
      * @param	Boolean $printErr
      * @return	Boolean	Is Successful?
-     * @author 	Lars Michelsen <lars@vertical-visions.de>
+     * @author 	Lars Michelsen <lm@larsmichelsen.com>
      */
     private function checkMainConfigIsValid($printErr) {
         // check given objects and attributes
@@ -1681,7 +1942,7 @@ class GlobalMainCfg {
                                 // Check if the configured backend is defined in main configuration file
                                 if(!$this->onlyUserConfig && $type == 'defaults' && $key == 'backend' && !isset($this->config['backend_'.$val])) {
                                     if($printErr) {
-                                        throw new NagVisException(l('backendNotDefined', Array('BACKENDID' => $val)));
+                                        throw new NagVisException(l('The backend with the ID \"[BACKENDID]\" is not defined.', Array('BACKENDID' => $val)));
                                     }
                                     return FALSE;
                                 }
@@ -1706,7 +1967,7 @@ class GlobalMainCfg {
      * Returns the last modification time of the configuration file
      *
      * @return	Integer	Unix Timestamp
-     * @author 	Lars Michelsen <lars@vertical-visions.de>
+     * @author 	Lars Michelsen <lm@larsmichelsen.com>
      */
     public function getConfigFileAge() {
         $newest = 0;
@@ -1722,7 +1983,7 @@ class GlobalMainCfg {
      *
      * @return  Boolean  Result
      * @return  Integer  Unix timestamp of cache creation time or -1 when not cached
-     * @author  Lars Michelsen <lars@vertical-visions.de>
+     * @author  Lars Michelsen <lm@larsmichelsen.com>
      */
     public function isCached() {
         return $this->useCache;
@@ -1735,7 +1996,7 @@ class GlobalMainCfg {
      * @param	String	$var	Variable
      * @param	String	$val	Value
      * @return	Boolean	Is Successful?
-     * @author 	Lars Michelsen <lars@vertical-visions.de>
+     * @author 	Lars Michelsen <lm@larsmichelsen.com>
      */
     public function setValue($sec, $var, $val) {
         if(isset($this->config[$sec][$var]) && $val == '') {
@@ -1752,6 +2013,10 @@ class GlobalMainCfg {
             $this->config[$sec][$var] = $val;
         }
         return TRUE;
+    }
+
+    public function unsetValue($sec, $var) {
+        unset($this->config[$sec][$var]);
     }
 
     public function getPath($type, $loc, $var, $relfile = '') {
@@ -1786,71 +2051,78 @@ class GlobalMainCfg {
     }
 
     /**
-     * Gets a config setting
-     *
-     * @param	String	$sec	Section
-     * @param	String	$var	Variable
-     * @param   Bool	$ignoreDefault Don't read default value
-     * @return	String	$val	Value
-     * @author 	Lars Michelsen <lars@vertical-visions.de>
+     * returns the hard coded default value of a config option
      * FIXME: Needs to be simplified
      */
-    public function getValue($sec, $var, $ignoreDefault=FALSE) {
-        // if nothing is set in the config file, use the default value
-        // (Removed "&& is_array($this->config[$sec]) due to performance issues)
-        if(isset($this->config[$sec]) && isset($this->config[$sec][$var])) {
-            return $this->config[$sec][$var];
-        } elseif(!$ignoreDefault) {
-            // Speed up this method by first checking for major sections and only if
-            // they don't match try to match the backend_ and rotation_ sections
-            if($sec == 'global' || $sec == 'defaults' || $sec == 'paths') {
-                return $this->validConfig[$sec][$var]['default'];
-            } elseif(strpos($sec, 'backend_') === 0) {
+    public function getDefaultValue($sec, $var) {
+        // Speed up this method by first checking for major sections and only if
+        // they don't match try to match the backend_ and rotation_ sections
+        if($sec == 'global' || $sec == 'defaults' || $sec == 'paths') {
+            return $this->validConfig[$sec][$var]['default'];
+        } elseif(strpos($sec, 'backend_') === 0) {
 
-                // Choose the backend type (Configured one or the system default)
-                $backendType = '';
-                if(isset($this->config[$sec]['backendtype']) && $this->config[$sec]['backendtype'] !== '') {
-                    $backendType = $this->config[$sec]['backendtype'];
-                } else {
-                    $backendType = $this->validConfig['backend']['backendtype']['default'];
-                }
-
-                // This value could be emtpy - so only check if it is set
-                if(isset($this->validConfig['backend']['options'][$backendType][$var]['default'])) {
-                    return $this->validConfig['backend']['options'][$backendType][$var]['default'];
-                } else {
-                    // This value could be emtpy - so only check if it is set
-                    if(isset($this->validConfig['backend'][$var]['default'])) {
-                        return $this->validConfig['backend'][$var]['default'];
-                    }
-                }
-
-            } elseif(strpos($sec, 'rotation_') === 0) {
-                if(isset($this->config[$sec]) && is_array($this->config[$sec])) {
-                    return $this->validConfig['rotation'][$var]['default'];
-                } else {
-                    return null;
-                }
-
-            } elseif(strpos($sec, 'action_') === 0) {
-                if(!isset($this->config[$sec]['action_type']))
-                    return null;
-                $ty = $this->config[$sec]['action_type'];
-
-                // This value could be emtpy - so only check if it is set
-                if(isset($this->validConfig['action']['options'][$ty][$var]['default'])) {
-                    return $this->validConfig['action']['options'][$ty][$var]['default'];
-                } else {
-                    // This value could be emtpy - so only check if it is set
-                    if(isset($this->validConfig['action'][$var]['default'])) {
-                        return $this->validConfig['action'][$var]['default'];
-                    }
-                }
-
+            // Choose the backend type (Configured one or the system default)
+            $backendType = '';
+            if(isset($this->config[$sec]['backendtype']) && $this->config[$sec]['backendtype'] !== '') {
+                $backendType = $this->config[$sec]['backendtype'];
             } else {
-                return $this->validConfig[$sec][$var]['default'];
+                $backendType = $this->validConfig['backend']['backendtype']['default'];
             }
+
+            // This value could be emtpy - so only check if it is set
+            if(isset($this->validConfig['backend']['options'][$backendType][$var]['default'])) {
+                return $this->validConfig['backend']['options'][$backendType][$var]['default'];
+            } else {
+                // This value could be emtpy - so only check if it is set
+                if(isset($this->validConfig['backend'][$var]['default'])) {
+                    return $this->validConfig['backend'][$var]['default'];
+                }
+            }
+
+        } elseif(strpos($sec, 'rotation_') === 0) {
+            if(isset($this->config[$sec]) && is_array($this->config[$sec])) {
+                return $this->validConfig['rotation'][$var]['default'];
+            } else {
+                return null;
+            }
+
+        } elseif(strpos($sec, 'action_') === 0) {
+            if(!isset($this->config[$sec]['action_type']))
+                return null;
+            $ty = $this->config[$sec]['action_type'];
+
+            // This value could be emtpy - so only check if it is set
+            if(isset($this->validConfig['action']['options'][$ty][$var]['default'])) {
+                return $this->validConfig['action']['options'][$ty][$var]['default'];
+            } else {
+                // This value could be emtpy - so only check if it is set
+                if(isset($this->validConfig['action'][$var]['default'])) {
+                    return $this->validConfig['action'][$var]['default'];
+                }
+            }
+
         } else {
+            return $this->validConfig[$sec][$var]['default'];
+        }
+    }
+
+    /**
+     * Returns the value of a main configuration option. Either the hard coded default
+     * value, or the configured one
+     */
+    public function getValue($sec, $var, $ignoreDefault=false, $ignoreUserConfig=false) {
+        if ($ignoreUserConfig && $this->preUserConfig !== null)
+            $arr = $this->preUserConfig;
+        else
+            $arr = $this->config;
+
+        if (isset($arr[$sec]) && isset($arr[$sec][$var])) {
+            return $arr[$sec][$var];
+        }
+        elseif (!$ignoreDefault) {
+            return $this->getDefaultValue($sec, $var);
+        }
+        else {
             return null;
         }
     }
@@ -1859,7 +2131,7 @@ class GlobalMainCfg {
      * A getter to provide all section names of main configuration
      *
      * @return  Array  List of all sections as values
-     * @author  Lars Michelsen <lars@vertical-visions.de>
+     * @author  Lars Michelsen <lm@larsmichelsen.com>
      */
     public function getSections() {
         $aRet = Array();
@@ -1875,7 +2147,7 @@ class GlobalMainCfg {
      * @param	String	$var	Variable
      * @param	String	$val	Value
      * @return	Boolean	Is Successful?
-     * @author 	Lars Michelsen <lars@vertical-visions.de>
+     * @author 	Lars Michelsen <lm@larsmichelsen.com>
      */
     public function setRuntimeValue($var, $val) {
         $this->runtimeConfig[$var] = $val;
@@ -1887,7 +2159,7 @@ class GlobalMainCfg {
      *
      * @param	String	$var	Variable
      * @return	String	$val	Value
-     * @author 	Lars Michelsen <lars@vertical-visions.de>
+     * @author 	Lars Michelsen <lm@larsmichelsen.com>
      */
     public function getRuntimeValue($var) {
         return isset($this->runtimeConfig[$var]) ? $this->runtimeConfig[$var] : '';
@@ -1897,20 +2169,21 @@ class GlobalMainCfg {
      * Parses general settings
      *
      * @return	String 	JSON Code
-     * @author 	Lars Michelsen <lars@vertical-visions.de>
+     * @author 	Lars Michelsen <lm@larsmichelsen.com>
      */
     public function parseGeneralProperties() {
         $p = Array(
-          'controls_size'  => intval($this->getValue('global', 'controls_size')),
-          'date_format'    => $this->getValue('global', 'dateformat'),
-          'path_base'      => $this->getValue('paths','htmlbase'),
-          'path_cgi'       => $this->getValue('paths','htmlcgi'),
-          'path_sounds'    => $this->getPath('html', 'global', 'sounds'),
-          'path_iconsets'  => $this->getPath('html', 'global', 'icons'),
-          'path_shapes'    => $this->getPath('html', 'global', 'shapes'),
-          'path_images'    => $this->getValue('paths','htmlimages'),
-          'path_server'    => $this->getValue('paths','htmlbase').'/server/core/ajax_handler.php',
-          'internal_title' => $this->getValue('internal', 'title'),
+          'date_format'        => $this->getValue('global', 'dateformat'),
+          'path_base'          => $this->getValue('paths','htmlbase'),
+          'path_cgi'           => $this->getValue('paths','htmlcgi'),
+          'path_sounds'        => $this->getPath('html', 'global', 'sounds'),
+          'path_iconsets'      => $this->getPath('html', 'global', 'icons'),
+          'path_shapes'        => $this->getPath('html', 'global', 'shapes'),
+          'path_images'        => $this->getValue('paths','htmlimages'),
+          'path_server'        => $this->getValue('paths','htmlbase').'/server/core/ajax_handler.php',
+          'internal_title'     => $this->getValue('internal', 'title'),
+          'header_show_states' => intval($this->getValue('defaults', 'header_show_states')),
+          'zoom_scale_objects' => intval($this->getValue('defaults', 'zoom_scale_objects')),
         );
 
         // Add custom action configuration
@@ -1930,32 +2203,24 @@ class GlobalMainCfg {
      * Parses the settings for the javascript worker
      *
      * @return	String 	JSON Code
-     * @author 	Lars Michelsen <lars@vertical-visions.de>
+     * @author 	Lars Michelsen <lm@larsmichelsen.com>
      */
     public function parseWorkerProperties() {
         return json_encode(Array(
             'worker_interval'             => $this->getValue('worker', 'interval'),
-            'worker_update_object_states' => $this->getValue('worker', 'updateobjectstates'),
-            'worker_request_max_params'   => $this->getValue('worker', 'requestmaxparams'),
-            'worker_request_max_length'   => $this->getValue('worker', 'requestmaxlength')
+            'worker_update_object_states' => $this->getValue('worker', 'updateobjectstates')
         ));
     }
 
-    /**$
-     * Parses the state weight configuration array
-     *
-     * @author  Lars Michelsen <lars@vertical-visions.de>
+    /**
+     * Populates the state weight structure, provided by hardcoded defaults
+     * and maybe the user configuration
      */
     private function parseStateWeight() {
         $arr = Array();
 
         foreach($this->validConfig['states'] AS $lowState => $aVal) {
             $key = explode('_', $lowState);
-
-            // First create array when not exists
-            if(!isset($arr[strtoupper($key[0])])) {
-                $arr[strtoupper($key[0])] = Array();
-            }
 
             // Convert state values to int
             $last_part = $key[sizeof($key) - 1];
@@ -1965,15 +2230,22 @@ class GlobalMainCfg {
                 $val = $this->getValue('states', $lowState);
             }
 
+            $state = state_num(strtoupper($key[0]));
+
+            // First create array when not exists
+            if(!isset($arr[$state])) {
+                $arr[$state] = Array();
+            }
+
             if(isset($key[1]) && isset($key[2])) {
                 // at the moment only bg colors of substates
-                $arr[strtoupper($key[0])][$key[1].'_'.$key[2]] = $val;
+                $arr[$state][$key[1].'_'.$key[2]] = $val;
             } elseif(isset($key[1])) {
                 // ack/downtime
-                $arr[strtoupper($key[0])][$key[1]] = $val;
+                $arr[$state][$key[1]] = $val;
             } else {
                 // normal state definition
-                $arr[strtoupper($key[0])]['normal'] = $val;
+                $arr[$state]['normal'] = $val;
             }
         }
 
@@ -1984,10 +2256,23 @@ class GlobalMainCfg {
      * Returns an array with the state weight configuration
      *
      * @return  Array
-     * @author  Lars Michelsen <lars@vertical-visions.de>
+     * @author  Lars Michelsen <lm@larsmichelsen.com>
      */
     public function getStateWeight() {
         return $this->stateWeight;
+    }
+
+    /**
+     * Returns an array with the state weight configuration for the
+     * JS frontend, which is not yet aware of numeric state codes. So
+     * translate the states here.
+     */
+    public function getStateWeightJS() {
+        $arr = array();
+        foreach ($this->stateWeight AS $state => $val) {
+            $arr[state_str($state)] = $val;
+        }
+        return $arr;
     }
 
     /**
@@ -1999,7 +2284,7 @@ class GlobalMainCfg {
      *
      * @param   String  Type to get the information for
      * @return  Array   The validConfig array
-     * @author  Lars Michelsen <lars@vertical-visions.de>
+     * @author  Lars Michelsen <lm@larsmichelsen.com>
      */
     function getValidObjectType($type) {
         return $this->validConfig[$type];
@@ -2009,7 +2294,7 @@ class GlobalMainCfg {
      * Gets the valid configuration array
      *
      * @return	Array The validConfig array
-     * @author 	Lars Michelsen <lars@vertical-visions.de>
+     * @author 	Lars Michelsen <lm@larsmichelsen.com>
      */
     function getValidConfig() {
         return $this->validConfig;
@@ -2019,7 +2304,7 @@ class GlobalMainCfg {
      * Gets the configuration array
      *
      * @return	Array The validConfig array
-     * @author 	Lars Michelsen <lars@vertical-visions.de>
+     * @author 	Lars Michelsen <lm@larsmichelsen.com>
      */
     function getConfig() {
         return $this->config;
@@ -2030,7 +2315,7 @@ class GlobalMainCfg {
      *
      * @param	String	$sec	Section
      * @return	Boolean	Is Successful?
-     * @author 	Lars Michelsen <lars@vertical-visions.de>
+     * @author 	Lars Michelsen <lm@larsmichelsen.com>
      */
     function setSection($sec) {
         // Try to append new backends after already defined
@@ -2068,7 +2353,7 @@ class GlobalMainCfg {
      *
      * @param	String	$sec	Section
      * @return	Boolean	Is Successful?
-     * @author 	Lars Michelsen <lars@vertical-visions.de>
+     * @author 	Lars Michelsen <lm@larsmichelsen.com>
      */
     function delSection($sec) {
         $this->config[$sec] = '';
@@ -2081,7 +2366,7 @@ class GlobalMainCfg {
      * Writes the config file completly from array $this->configFile
      *
      * @return	Boolean	Is Successful?
-     * @author 	Lars Michelsen <lars@vertical-visions.de>
+     * @author 	Lars Michelsen <lm@larsmichelsen.com>
      */
     function writeConfig() {
         // Check for config file write permissions
@@ -2181,7 +2466,7 @@ class GlobalMainCfg {
      *
      * @param	Boolean $printErr
      * @return	Boolean	Is Successful?
-     * @author 	Lars Michelsen <lars@vertical-visions.de>
+     * @author 	Lars Michelsen <lm@larsmichelsen.com>
      */
     function checkNagVisConfigWriteable($printErr) {
         return GlobalCore::getInstance()->checkWriteable($this->configFiles[count($this->configFiles)-1], $printErr);
@@ -2202,6 +2487,43 @@ class GlobalMainCfg {
             $val[$trimKey] = trim($trimVal);
 
         return $val;
+    }
+
+    public function getSectionTitle($sec) {
+        $titles = array(
+            'global'   => l('Global Settings'),
+            'defaults' => l('Object Defaults'),
+            'index'    => l('Overview'),
+            'worker'   => l('State Updates'),
+            'states'   => l('States'),
+            'paths'    => l('Paths'),
+            'automap'  => l('Automap'),
+        );
+        if (isset($titles[$sec]))
+            return $titles[$sec];
+        else
+            return $sec;
+    }
+
+    /**
+     * Returns the name of the list function for the given map config option
+     */
+    public function getListFunc($sec, $key) {
+        if(isset($this->validConfig[$sec][$key]['list']))
+            return $this->validConfig[$sec][$key]['list'];
+        else
+            throw new NagVisException(l('No "list" function registered for option "[OPT]" of type "[TYPE]"',
+                                                                       Array('OPT' => $sec, 'TYPE' => $key)));
+    }
+
+    /**
+     * Finds out if an attribute has dependant attributes
+     */
+    public function hasDependants($sec, $key) {
+        foreach ($this->validConfig[$sec] AS $arr)
+            if (isset($arr['depends_on']) && $arr['depends_on'] == $key)
+                return true;
+        return false;
     }
 }
 ?>

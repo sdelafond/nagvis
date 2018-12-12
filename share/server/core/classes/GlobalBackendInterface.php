@@ -3,7 +3,7 @@
  *
  * GlobalBackendInterface.php - Interface for implementing a backend in NagVis
  *
- * Copyright (c) 2004-2010 NagVis Project (Contact: lars@vertical-visions.de)
+ * Copyright (c) 2004-2010 NagVis Project (Contact: lm@larsmichelsen.com)
  *
  * License:
  *
@@ -23,11 +23,11 @@
  *****************************************************************************/
 
 /**
- * @author	Lars Michelsen <lars@vertical-visions.de>
+ * @author	Lars Michelsen <lm@larsmichelsen.com>
  */
 
 interface GlobalBackendInterface {
-    public function __construct($CORE, $backendId);
+    public function __construct($backendId);
 
     /**
      * Static function which returns the backend specific configuration options
@@ -57,7 +57,7 @@ interface GlobalBackendInterface {
      * Returns the service state counts for a list of hosts. Using
      * the given objects and filters.
      */
-    public function getHostStateCounts($objects, $options, $filters);
+    public function getHostMemberCounts($objects, $options, $filters);
 
     /**
      * Returns the host and service state counts for a list of hostgroups. Using

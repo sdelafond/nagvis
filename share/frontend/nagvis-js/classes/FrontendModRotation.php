@@ -3,7 +3,7 @@
  *
  * FrontendModRotation.php - Module for handling rotations in NagVis
  *
- * Copyright (c) 2004-2011 NagVis Project (Contact: info@nagvis.org)
+ * Copyright (c) 2004-2016 NagVis Project (Contact: info@nagvis.org)
  *
  * License:
  *
@@ -23,7 +23,7 @@
  *****************************************************************************/
 
 /**
- * @author	Lars Michelsen <lars@vertical-visions.de>
+ * @author	Lars Michelsen <lm@larsmichelsen.com>
  */
 class FrontendModRotation extends FrontendModule {
     private $name   = '';
@@ -76,7 +76,7 @@ class FrontendModRotation extends FrontendModule {
 
     private function showViewDialog() {
         // Initialize rotation/refresh
-        $ROTATION = new FrontendRotation($this->CORE, $this->name);
+        $ROTATION = new FrontendRotation($this->name);
 
         // Set the requested step
         if($this->type != '' && $this->step != '')

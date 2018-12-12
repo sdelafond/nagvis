@@ -1,7 +1,12 @@
 # Holds common install function used e.g. by install.sh and omd_install.sh
 
 cmp() {
-    cat $1 | sed 's#\(var\)\s*\(\S*\)\s*=\s*#\1 \2=#;s#^\s*##;s#\s*$##;s#\t+# #g' | awk '
+    if [ "$(uname)" = "Darwin" ]; then
+        SED=gsed
+    else
+        SED=sed
+    fi
+    cat $1 | $SED 's#\(var\)\s*\(\S*\)\s*=\s*#\1 \2=#;s#^\s*##;s#\s*$##;s#\t+# #g' | awk '
     BEGIN { OK=1; braces=0 }
     {
         # Remove /* */ one line comments
@@ -58,20 +63,31 @@ cmp_js() {
     OUT=NagVisCompressed.js
     >$OUT
     cmp ExtStacktrace.js
+    cmp ExtLeaflet.js
     cmp nagvis.js
     cmp edit.js
     cmp popupWindow.js
     cmp ExtBase.js
     cmp frontendMessage.js
     cmp frontendEventlog.js
-    cmp frontendHover.js
-    cmp hover.js
-    cmp frontendContext.js
     cmp ajax.js
     cmp ajaxActions.js
     cmp dynfavicon.js
-    cmp frontend.js
-    cmp lines.js
+    cmp Element.js
+    cmp ElementContext.js
+    cmp ElementHover.js
+    cmp ElementIcon.js
+    cmp ElementLine.js
+    cmp ElementGadget.js
+    cmp ElementLabel.js
+    cmp ElementShape.js
+    cmp ElementBox.js
+    cmp ElementTile.js
+    cmp View.js
+    cmp ViewMap.js
+    cmp ViewWorldmap.js
+    cmp ViewOverview.js
+    cmp ViewUrl.js
     cmp NagVisObject.js
     cmp NagVisStatefulObject.js
     cmp NagVisStatelessObject.js
@@ -79,14 +95,16 @@ cmp_js() {
     cmp NagVisService.js
     cmp NagVisHostgroup.js
     cmp NagVisServicegroup.js
+    cmp NagVisDynGroup.js
+    cmp NagVisAggr.js
     cmp NagVisMap.js
     cmp NagVisShape.js
     cmp NagVisLine.js
     cmp NagVisTextbox.js
     cmp NagVisContainer.js
     cmp NagVisRotation.js
+    cmp frontend.js
     cmp ExtWzJsGraphics.js
-    cmp ExtGenericResize.js
     cmp ExtJSColor.js
     popd >/dev/null
 }

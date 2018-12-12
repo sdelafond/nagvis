@@ -3,7 +3,7 @@
  *
  * CoreTemplateSystem.php - Core wrapper class for the template system
  *
- * Copyright (c) 2004-2011 NagVis Project (Contact: info@nagvis.org)
+ * Copyright (c) 2004-2016 NagVis Project (Contact: info@nagvis.org)
  *
  * License:
  *
@@ -23,17 +23,12 @@
  ******************************************************************************/
 
 /**
- * @author Lars Michelsen <lars@vertical-visions.de>
+ * @author Lars Michelsen <lm@larsmichelsen.com>
  */
 
 // Load the frontend template system. This is not done via autoload cause
 // links from core to frontend classes are hacks which should be reduced
 require_once('../../frontend/nagvis-js/classes/FrontendTemplateSystem.php');
 
-class CoreTemplateSystem extends FrontendTemplateSystem {
-    public function __construct($CORE) {
-        parent::__construct($CORE);
-    }
-}
-
+class CoreTemplateSystem extends FrontendTemplateSystem {} 
 ?>

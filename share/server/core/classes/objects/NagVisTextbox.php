@@ -4,7 +4,7 @@
  * NagVisTextbox.php - Class of a text object in NagVis with all necessary
  *                  information which belong to the object handling in NagVis
  *
- * Copyright (c) 2004-2011 NagVis Project (Contact: info@nagvis.org)
+ * Copyright (c) 2004-2016 NagVis Project (Contact: info@nagvis.org)
  *
  * License:
  *
@@ -24,25 +24,13 @@
  *****************************************************************************/
 
 /**
- * @author	Lars Michelsen <lars@vertical-visions.de>
+ * @author	Lars Michelsen <lm@larsmichelsen.com>
  */
 class NagVisTextbox extends NagVisStatelessObject {
 
-    public function __construct($CORE) {
+    public function __construct() {
         $this->type = 'textbox';
-        parent::__construct($CORE);
-    }
-
-    /**
-     * PUBLIC parseJson()
-     *
-     * Parses the object in json format
-     *
-     * @return	String		JSON code of the object
-     * @author	Lars Michelsen <lars@vertical-visions.de>
-     */
-    public function parseJson() {
-        return parent::parseJson();
+        parent::__construct();
     }
 
     /**
@@ -50,7 +38,7 @@ class NagVisTextbox extends NagVisStatelessObject {
      *
      * Just a dummy here (Textbox won't need an icon)
      *
-     * @author	Lars Michelsen <lars@vertical-visions.de>
+     * @author	Lars Michelsen <lm@larsmichelsen.com>
      */
     public function fetchIcon() {
         // Nothing to do here, icon is set in constructor

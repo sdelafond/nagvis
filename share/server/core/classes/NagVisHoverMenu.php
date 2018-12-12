@@ -3,7 +3,7 @@
  *
  * NagVisHoverMenu.php - Class for handling the hover menus
  *
- * Copyright (c) 2004-2011 NagVis Project (Contact: info@nagvis.org)
+ * Copyright (c) 2004-2016 NagVis Project (Contact: info@nagvis.org)
  *
  * License:
  *
@@ -23,7 +23,7 @@
  *****************************************************************************/
 
 /**
- * @author	Lars Michelsen <lars@vertical-visions.de>
+ * @author	Lars Michelsen <lm@larsmichelsen.com>
  */
 class NagVisHoverMenu {
     private $CORE;
@@ -40,7 +40,7 @@ class NagVisHoverMenu {
      * Class Constructor
      *
      * @param 	GlobalCore 	$CORE
-     * @author 	Lars Michelsen <lars@vertical-visions.de>
+     * @author 	Lars Michelsen <lm@larsmichelsen.com>
      */
     public function __construct($CORE, $templateName, $OBJ = NULL) {
         $this->CORE = $CORE;
@@ -49,7 +49,7 @@ class NagVisHoverMenu {
         $this->templateName = $templateName;
 
         $this->pathHtmlBase     = cfg('paths','htmlbase');
-        $this->pathTemplateFile = $this->CORE->getMainCfg()->getPath('sys', '', 'templates', $this->templateName.'.hover.html');
+        $this->pathTemplateFile = path('sys', '', 'templates', $this->templateName.'.hover.html');
 
         // Simply skip processing with an invalid template file name
         if($this->pathTemplateFile === '')
@@ -83,7 +83,7 @@ class NagVisHoverMenu {
      * Reads the contents of the hover template file
      *
      * @return	String		HTML Code for the hover menu
-     * @author 	Lars Michelsen <lars@vertical-visions.de>
+     * @author 	Lars Michelsen <lm@larsmichelsen.com>
      */
     private function readTemplate() {
         if($this->checkTemplateReadable(1)) {
@@ -99,7 +99,7 @@ class NagVisHoverMenu {
      *
      * Replaces static macros like paths and language strings in template code
      *
-     * @author  Lars Michelsen <lars@vertical-visions.de>
+     * @author  Lars Michelsen <lm@larsmichelsen.com>
      */
     private function replaceStaticMacros() {
         // Replace the static macros (language, paths)
@@ -175,23 +175,27 @@ class NagVisHoverMenu {
             $this->code = str_replace('[lang_last_status_refresh]', l('lastStatusRefresh'), $this->code);
         }
 
+        if(strpos($this->code,'[lang_tags]') !== FALSE) {
+            $this->code = str_replace('[lang_tags]', l('Tags'), $this->code);
+        }
+
         if(strpos($this->code,'[html_base]') !== FALSE) {
             $this->code = str_replace('[html_base]',cfg('paths','htmlbase'),$this->code);
         }
 
         if(strpos($this->code,'[html_templates]') !== FALSE) {
-            $this->code = str_replace('[html_templates]',$this->CORE->getMainCfg()->getPath('sys', 'global', 'templates'),$this->code);
+            $this->code = str_replace('[html_templates]', path('sys', 'global', 'templates'),$this->code);
         }
 
         if(strpos($this->code,'[html_template_images]') !== FALSE)
-            $this->code = str_replace('[html_template_images]', $this->CORE->getMainCfg()->getPath('html', 'global', 'templateimages'), $this->code);
+            $this->code = str_replace('[html_template_images]', path('html', 'global', 'templateimages'), $this->code);
     }
 
     /**
      * Print the HTML code
      *
      * return   String  HTML Code
-     * @author 	Lars Michelsen <lars@vertical-visions.de>
+     * @author 	Lars Michelsen <lm@larsmichelsen.com>
      */
     public function __toString () {
         return $this->code;
@@ -204,7 +208,7 @@ class NagVisHoverMenu {
      *
      * @param		Boolean		Switch for enabling/disabling error messages
      * @return	Boolean		Check Result
-     * @author 	Lars Michelsen <lars@vertical-visions.de>
+     * @author 	Lars Michelsen <lm@larsmichelsen.com>
      */
     private function checkTemplateReadable($printErr) {
         return GlobalCore::getInstance()->checkReadable($this->pathTemplateFile, $printErr);
@@ -217,14 +221,14 @@ class NagVisHoverMenu {
      *
      * @param		Boolean		Switch for enabling/disabling error messages
      * @return	Boolean		Check Result
-     * @author 	Lars Michelsen <lars@vertical-visions.de>
+     * @author 	Lars Michelsen <lm@larsmichelsen.com>
      */
     private function checkTemplateExists($printErr) {
         return GlobalCore::getInstance()->checkExisting($this->pathTemplateFile, $printErr);
     }
 
     public function getCssFile() {
-        return $this->CORE->getMainCfg()->getPath('html', 'global', 'templates', $this->templateName.'.hover.css');
+        return path('html', 'global', 'templates', $this->templateName.'.hover.css');
     }
 }
 ?>

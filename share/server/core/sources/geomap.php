@@ -42,16 +42,28 @@ function geomap_read_csv($p) {
 
 function geomap_backend_locations($p) {
     global $_BACKEND;
-    $_BACKEND->checkBackendExists($p['backend_id'], true);
-    $_BACKEND->checkBackendFeature($p['backend_id'], 'getGeomapHosts', true);
-    return $_BACKEND->getBackend($p['backend_id'])->getGeomapHosts($p['filter_group']);
+    $hosts = array();
+    foreach ($p['backend_id'] AS $backend_id) {
+        $_BACKEND->checkBackendExists($backend_id, true);
+        $_BACKEND->checkBackendFeature($backend_id, 'getGeomapHosts', true);
+
+        $hosts = array_merge($hosts, $_BACKEND->getBackend($backend_id)->getGeomapHosts($p['filter_group']));
+    }
+    return $hosts;
 }
 
 function geomap_backend_program_start($p) {
     global $_BACKEND;
-    $_BACKEND->checkBackendExists($p['backend_id'], true);
-    $_BACKEND->checkBackendFeature($p['backend_id'], 'getProgramStart', true);
-    return $_BACKEND->getBackend($p['backend_id'])->getProgramStart();
+    $t = null;
+    foreach ($p['backend_id'] AS $backend_id) {
+        $_BACKEND->checkBackendExists($backend_id, true);
+        $_BACKEND->checkBackendFeature($backend_id, 'getProgramStart', true);
+
+        $this_t = $_BACKEND->getBackend($backend_id)->getProgramStart();
+        if ($t === null || $this_t > $t)
+            $t = $this_t;
+    }
+    return $t;
 }
 
 //
@@ -127,9 +139,7 @@ function geomap_get_contents($url) {
 
 function list_geomap_types() {
     return array(
-        'osmarender' => 'Osmarender',
         'mapnik'     => 'Mapnik',
-        'cycle'      => 'Cycle',
     );
 }
 
@@ -140,9 +150,14 @@ function list_geomap_source_types() {
     );
 }
 
-function list_geomap_source_files($CORE) {
+function list_geomap_source_files() {
+    global $CORE;
     return $CORE->getAvailableGeomapSourceFiles();
 }
+
+// Register this source as being selectable by the user
+global $selectable;
+$selectable = true;
 
 // options to be modifiable by the user(url)
 global $viewParams;
@@ -154,7 +169,11 @@ $viewParams = array(
         'geomap_border',
         'source_type',
         'source_file',
+        'width',
+        'height',
+        'iconset',
         'label_show',
+        'filter_group',
     )
 );
 
@@ -164,7 +183,7 @@ $configVars = array(
     'geomap_type' => array(
         'must'       => false,
         'default'    => 'mapnik',
-        'match'      => '/^(osmarender|mapnik|cycle)$/i',
+        'match'      => '/^(mapnik)$/i',
         'field_type' => 'dropdown',
         'list'       => 'list_geomap_types',
     ),
@@ -196,6 +215,35 @@ $configVars = array(
     ),
 );
 
+// Assign config variables to specific object types
+global $configVarMap;
+$configVarMap = array(
+    'global' => array(
+        'geomap' => array(
+            'geomap_type'   => null,
+            'geomap_zoom'   => null,
+            'source_type'   => null,
+            'source_file'   => null,
+            'geomap_border' => null,
+        ),
+    ),
+);
+
+// Global config vars not to show for geomaps
+$hiddenConfigVars = array(
+    'map_image',
+);
+
+// Alter some global vars with automap specific things
+$updateConfigVars = array(
+    'width' => array(
+        'default' => 1000,
+    ),
+    'height' => array(
+        'default' => 600,
+    ),
+);
+
 function geomap_files($params) {
     // The source_file parameter was filtered here in previous versions. Users
     // reported that this is not very useful. So I removed it. Hope it works
@@ -203,6 +251,7 @@ function geomap_files($params) {
     // FIXME: the following two "unset" statements fix an "array to string conversion" error
     unset ($params['filter_group']);
     unset ($params['sources']);
+    unset ($params['backend_id']);
 
     $image_name  = 'geomap-'.implode('_', array_values($params)).'.png';
     return array(
@@ -228,7 +277,7 @@ function process_geomap($MAPCFG, $map_name, &$map_config) {
 
     $iconset = $params['iconset'];
     list($icon_w, $icon_h) = iconset_size($iconset);
-    
+
     // Adapt the global section
     $map_config[0] = $saved_config[0];
     $map_config[0]['map_image'] = $image_name.'?'.time().'.png';
@@ -246,6 +295,10 @@ function process_geomap($MAPCFG, $map_name, &$map_config) {
             'lat'       => $loc['lat'],
             'long'      => $loc['long'],
         );
+
+        if (isset($loc['backend_id'])) {
+            $map_config[$object_id]['backend_id'] = array($loc['backend_id']);
+        }
     }
     unset($locations);
 
@@ -253,7 +306,7 @@ function process_geomap($MAPCFG, $map_name, &$map_config) {
     process_filter($MAPCFG, $map_name, $map_config, $params);
 
     // Terminate empty views
-    if(count($map_config) == 0)
+    if(count($map_config) <= 1)
         throw new GeomapError(l('Got empty map after filtering. Terminate rendering geomap.'));
 
     // Now detect the upper and lower bounds of the locations to display
@@ -287,22 +340,29 @@ function process_geomap($MAPCFG, $map_name, &$map_config) {
 
     // FIXME: Too small min/max? What is the minimum bbox size?
 
-    $mid_lat  = $min_lat  + ($max_lat - $min_lat) / 2;
-    $mid_long = $min_long + ($max_long - $min_long) / 2;
-
     //echo $min_lat . ' - ' . $max_lat. ' - '. $mid_lat.'\n';
     //echo $min_long . ' - ' . $max_long. ' - ' . $mid_long;
 
+    if (!$params['width'] || !$params['height'])
+        throw new GeomapError(l('Missing mandatory "width" and "height" parameters."'));
+
     // Using this API: http://pafciu17.dev.openstreetmap.org/
     $url = cfg('global', 'geomap_server')
-          .'?module=map&bbox='.$min_long.','.$max_lat.','.$max_long.','.$min_lat
+          .'?module=map'
           .'&width='.$params['width'].'&height='.$params['height']
           .'&type='.$params['geomap_type'];
-          //.'&points='.$min_long.','.$max_lat.';'.$max_long.','.$min_lat;
+
     // The geomap zoom seems to be something different than the nagvis zoom. Use
     // the dedicated geomap_zoom parameter
-    if(isset($params['geomap_zoom']) && $params['geomap_zoom'] != '')
-        $url .= '&geomap_zoom='.$params['geomap_zoom'];
+    if(isset($params['geomap_zoom']) && $params['geomap_zoom'] != '') {
+        $mid_lat  = ($min_lat + $max_lat) / 2;
+        $mid_long = ($min_long + $max_long) / 2;
+        $url .= '&zoom='.$params['geomap_zoom']
+               .'&center='.$mid_long.','.$mid_lat;
+    }
+    else {
+        $url .= '&bbox='.$min_long.','.$max_lat.','.$max_long.','.$min_lat;
+    }
     //file_put_contents('/tmp/123', $url);
 
     // Fetch the background image when needed
@@ -324,9 +384,10 @@ function process_geomap($MAPCFG, $map_name, &$map_config) {
         $data_url = $url . '&bboxReturnFormat=csv';
         $contents = geomap_get_contents($data_url);
 
-        if(ord($contents[0]) == 137 &&
-           ord($contents[1]) == 80 &&
-           ord($contents[2]) == 78) {
+        if(!$contents ||
+            (ord($contents[0]) == 137 &&
+             ord($contents[1]) == 80 &&
+             ord($contents[2]) == 78)) {
             // Got an png image as answer - catch this!
             throw new GeomapError(l('Got invalid response from "[U]". This is mostly caused by an unhandled request.',
                                             array('U' => $data_url)));
@@ -361,8 +422,8 @@ function process_geomap($MAPCFG, $map_name, &$map_config) {
         // Calculate the lat (y) coords
         $obj['y'] = round((ProjectF($img_top) - ProjectF($obj['lat'])) * $lat_mult - ($icon_h / 2));
         if($obj['y'] < 0)
-            $obj['y'] = 0;		
-        
+            $obj['y'] = 0;
+
         // Calculate the long (x) coords
         $obj['x'] = round(($long_para * ($obj['long'] - $img_left)) - ($icon_w / 2));
         if($obj['x'] < 0)
@@ -371,6 +432,8 @@ function process_geomap($MAPCFG, $map_name, &$map_config) {
         unset($obj['lat']);
         unset($obj['long']);
     }
+
+    return true; // allow caching
 }
 
 /**

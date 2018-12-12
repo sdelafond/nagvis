@@ -3,7 +3,7 @@
  *
  * CoreModMultisite.php - Core multisite  module to handle ajax requests
  *
- * Copyright (c) 2004-2011 NagVis Project (Contact: info@nagvis.org)
+ * Copyright (c) 2004-2016 NagVis Project (Contact: info@nagvis.org)
  *
  * License:
  *
@@ -23,7 +23,7 @@
  ******************************************************************************/
 
 /**
- * @author Lars Michelsen <lars@vertical-visions.de>
+ * @author Lars Michelsen <lm@larsmichelsen.com>
  */
 class CoreModMultisite extends CoreModule {
     public function __construct(GlobalCore $CORE) {
@@ -36,121 +36,228 @@ class CoreModMultisite extends CoreModule {
     }
 
     public function handleAction() {
-        global $_BACKEND;
-        $sReturn = '';
-
         if(!$this->offersAction($this->sAction))
             return '';
 
         switch($this->sAction) {
             case 'getMaps':
-                // Initialize template system
-                $TMPL = New CoreTemplateSystem($this->CORE);
-                $TMPLSYS = $TMPL->getTmplSys();
-
-                $aData = Array(
-                    'htmlBase'  => cfg('paths', 'htmlbase'),
-                    'maps'      => $this->getMaps(),
-                );
-
-                // Build page based on the template file and the data array
-                $sReturn = $TMPLSYS->get($TMPL->getTmplFile('default', 'multisiteMaps'), $aData);
+                if (cfg('global', 'multisite_snapin_layout') == 'tree') {
+                    return $this->renderTree();
+                } else {
+                    return $this->renderTable();
+                }
             break;
         }
-
-        return $sReturn;
     }
 
-    /**
-     * Returns the NagVis maps available to the user as HTML formated string
-     *
-     * @return	String  HTML code
-     * @author 	Lars Michelsen <lars@vertical-visions.de>
-     */
-    private function getMaps() {
+    private function renderTree() {
+        $maps = array();
+        $childs = array();
+        foreach ($this->getMapsCached() as $map) {
+            if($map['parent_map'] === '')
+                $maps[$map['name']] = $map;
+            else {
+                if(!isset($childs[$map['parent_map']]))
+                    $childs[$map['parent_map']] = Array();
+                $childs[$map['parent_map']][$map['name']] = $map;
+            }
+        }
+
+        $s = '<ul>'.$this->renderTreeNodes($maps, $childs).'</ul>';
+
+        // FIXME: check_mk/tree_state.py?tree=nagvis holen
+        // evaluieren
+        // alles was auf off steht per toggle_foldable_container schließen
+        return $s.$this->renderFootnotelinks();
+    }
+
+    private function renderTreeNodes($maps, $childs) {
+        $s = '';
+        foreach($maps AS $map) {
+            // this copies the foldable_container code provided in Check_MK htmllib
+            // assume always open by default
+            $s .= '<li>';
+            $map_url = cfg('paths', 'htmlbase').'/index.php?mod=Map&act=view&show='.$map['name'];
+            if(isset($childs[$map['name']])) {
+                $act = 'onclick="toggle_foldable_container(\'nagvis\', \''.$map['name'].'\')" '
+                     . 'onmouseover="this.style.cursor=\'pointer\';" '
+                     . 'onmouseout="this.style.cursor=\'auto\';"';
+
+                $s .= '<img align=absbottom class="treeangle" id="treeimg.nagvis.'.$map['name'].'" '
+                    . 'src="images/tree_90.png" '.$act.' />';
+                $s .= '<a href="'.$map_url.'" target="main"><b class="treeangle title" class=treeangle>';
+                $s .= $map['alias'];
+                $s .= '</b></a><br>';
+                $s .= '<ul class="treeangle open" style="padding-left:0;" id="tree.nagvis.'.$map['name'].'">';
+                $s .= $this->renderTreeNodes($childs[$map['name']], $childs);
+                $s .= '</ul>';
+            } else {
+                $s .= '<a target="main" href="'.$map_url.'">'.$map['alias'].'</a>';
+            }
+            $s .= '</li>';
+        }
+        return $s;
+    }
+
+    private function renderTable() {
+        $code = '<table class="allhosts"><tbody>';
+        foreach ($this->getMapsCached() as $map) {
+            switch($map['summary_state']) {
+                case 'OK':
+                case 'UP':
+                    $state = '0';
+                    break;
+                case 'WARNING':
+                    $state = '1';
+                    break;
+                case 'CRITICAL':
+                case 'DOWN':
+                case 'UNREACHABLE':
+                    $state = '2';
+                    break;
+                default:
+                    $state = '3';
+                    break;
+            }
+
+            $title = $map['summary_state'];
+
+            if ($map['summary_in_downtime']) {
+                $state .= ' stated';
+                $title .= ' (Downtime)';
+            }
+            elseif ($map['summary_problem_has_been_acknowledged']) {
+                $state .= ' statea';
+                $title .= ' (Acknowledged)';
+            }
+
+            if ($map['summary_stale']) {
+                $state .= ' stale';
+                $title .= ' (Stale)';
+            }
+
+            $code .= '<tr><td>';
+            $code .= '<div class="statebullet state'.$state.'" title="'.$title.'">&nbsp;</div>';
+            $code .= '<a href="'.cfg('paths', 'htmlbase').'/index.php?mod=Map&act=view&show='.$map['name'].'" ';
+            $code .= 'class="link" target="main">'.$map['alias'].'</a>';
+            $code .= '</td></tr>';
+        }
+        $code .= '</tbody></table>';
+        return $code.$this->renderFootnotelinks();
+    }
+
+    private function renderFootnoteLinks() {
+        $url = cfg('paths', 'htmlbase');
+        return "<div class=footnotelink>"
+              ."<a onfocus=\"if (this.blur) this.blur();\" target=\"main\" class=\"link\" href=\"".$url."/\">EDIT</a>"
+              ."</div>";
+    }
+
+    // Wraps the getMaps() function by applying a short livetime cache based
+    // on the maps a user can access. This respects the map access permissions.
+    // The cache optimizes the case where a lot of users having the Check_MK
+    // NagVis maps snapin open at the same time while most of the users have
+    // equal permissions.
+    private function getMapsCached() {
+        $maps = $this->CORE->getPermittedMaps();
+        $cache_file = cfg('paths','var').'snapin-'.md5(json_encode(array_keys($maps))).'-'.CONST_VERSION.'.cache';
+        $CACHE = new GlobalFileCache(array(), $cache_file);
+        $cached = $CACHE->isCached();
+
+        if ($cached != -1 && time() - $cached < 15) {
+            return $CACHE->getCache();
+        } else {
+            $result = $this->getMaps($maps);
+            $CACHE->writeCache($result);
+            return $result;
+        }
+    }
+
+    // Gathers an array of maps and their states to be shown to the user
+    // in the multisite snapin
+    private function getMaps($maps) {
         global $_BACKEND, $AUTHORISATION;
         $aObjs = Array();
-        foreach($this->CORE->getAvailableMaps() AS $object_id => $mapName) {
-            if(!$AUTHORISATION->isPermitted('Map', 'view', $mapName))
-                continue;
+        foreach($maps AS $object_id => $mapName) {
+            $MAPCFG = new GlobalMapCfg($mapName);
 
-            $map = Array();
-            $map['type'] = 'map';
-
-            $MAPCFG = new NagVisMapCfg($this->CORE, $mapName);
-
+            $config_error = null;
+            $error = null;
             try {
                 $MAPCFG->readMapConfig();
             } catch(MapCfgInvalid $e) {
-                $map['configError'] = true;
-                $map['configErrorMsg'] = $e->getMessage();
+                $config_error = $e->getMessage();
             } catch(Exception $e) {
-                $map['error'] = true;
-                $map['errorMsg'] = $e->getMessage();
+                $error = $e->getMessage();
             }
 
             if($MAPCFG->getValue(0, 'show_in_lists') != 1 || $MAPCFG->getValue(0, 'show_in_multisite') != 1)
                 continue;
 
-            $MAP = new NagVisMap($this->CORE, $MAPCFG, GET_STATE, !IS_VIEW);
+            $MAP = new NagVisMap($MAPCFG, GET_STATE, !IS_VIEW);
 
-            // Apply default configuration to object
-            $objConf = $MAPCFG->getTypeDefaults('global');
-            $objConf['type']              = 'map';
-            $objConf['map_name']          = $MAPCFG->getName();
-            $objConf['object_id']         = $object_id;
-            // Enable the hover menu in all cases - maybe make it configurable
-            $objConf['hover_menu']        = 1;
-            $objConf['hover_childs_show'] = 1;
-            $objConf['hover_template']    = 'default';
-            unset($objConf['alias']);
-
+            // Apply mulitsite snapin related configuration to object
+            $objConf = array(
+                'type'              => 'map',
+                'map_name'          => $MAPCFG->getName(),
+                'object_id'         => $object_id,
+                // Enable the hover menu in all cases - maybe make it configurable
+                'hover_menu'        => 0,
+                'hover_childs_show' => 0,
+                'hover_template'    => 'default',
+                'parent_map'        => $MAPCFG->getValue(0, 'parent_map'),
+                // Enforce std_big iconset - don't use map default iconset
+                'iconset'           => 'std_big',
+                'icon_size'         => array(22),
+            );
             $MAP->MAPOBJ->setConfiguration($objConf);
 
-            if(isset($map['configError'])) {
-                $map['overview_class']  = 'error';
-                $map['overview_url']    = 'javascript:alert(\''.$map['configErrorMsg'].'\');';
-                $map['summary_output']  = l('Map Configuration Error: '.$map['configErrorMsg']);
-
+            if($config_error !== null) {
                 $MAP->MAPOBJ->clearMembers();
-                $MAP->MAPOBJ->setSummaryState('ERROR');
+                $MAP->MAPOBJ->setState(array(
+                    ERROR,
+                    l('Map Configuration Error: ').$config_error,
+                    null,
+                    null,
+                    null,
+                ));
                 $MAP->MAPOBJ->fetchIcon();
-            } elseif(isset($map['error'])) {
-                $map['overview_class']  = 'error';
-                $map['overview_url']    = 'javascript:alert(\''.$map['errorMsg'].'\');';
-                $map['summary_output']  = l('Error: '.$map['errorMsg']);
-
+            } elseif($error !== null) {
                 $MAP->MAPOBJ->clearMembers();
-                $MAP->MAPOBJ->setSummaryState('ERROR');
+                $MAP->MAPOBJ->setState(array(
+                    ERROR,
+                    l('Error: ').$error,
+                    null,
+                    null,
+                    null,
+                ));
                 $MAP->MAPOBJ->fetchIcon();
             } elseif($MAP->MAPOBJ->checkMaintenance(0)) {
                 $MAP->MAPOBJ->fetchIcon();
-
-                $map['overview_url']    = cfg('paths', 'htmlbase').'/index.php?mod=Map&act=view&show='.$mapName;
-                $map['overview_class']  = '';
-                $map['summary_output']  = $MAP->MAPOBJ->getSummaryOutput();
             } else {
-                $map['overview_class']  = 'disabled';
-                $map['overview_url']    = 'javascript:alert(\''.l('mapInMaintenance').'\');';
-                $map['summary_output']  = l('mapInMaintenance');
-
                 $MAP->MAPOBJ->clearMembers();
-                $MAP->MAPOBJ->setSummaryState('UNKNOWN');
+                $MAP->MAPOBJ->setState(array(
+                    UNKNOWN,
+                    l('mapInMaintenance'),
+                    null,
+                    null,
+                    null
+                ));
                 $MAP->MAPOBJ->fetchIcon();
             }
 
             $MAP->MAPOBJ->queueState(GET_STATE, GET_SINGLE_MEMBER_STATES);
-            $aObjs[] = Array($MAP->MAPOBJ, $map);
+            $aObjs[] = $MAP->MAPOBJ;
         }
 
         $_BACKEND->execute();
 
         $aMaps = Array();
-        foreach($aObjs AS $aObj) {
-            $aObj[0]->applyState();
-            $aObj[0]->fetchIcon();
+        foreach($aObjs AS $MAP) {
+            $MAP->applyState();
+            $MAP->fetchIcon();
 
-            $aMaps[] = $aObj[0]->getObjectInformation();
+            $aMaps[] = $MAP->getObjectInformation();
         }
 
         usort($aMaps, Array('GlobalCore', 'cmpAlias'));

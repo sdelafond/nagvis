@@ -3,7 +3,7 @@
  *
  * CoreModSearch.php - Core module to display the map object search dialog
  *
- * Copyright (c) 2004-2011 NagVis Project (Contact: info@nagvis.org)
+ * Copyright (c) 2004-2016 NagVis Project (Contact: info@nagvis.org)
  *
  * License:
  *
@@ -23,7 +23,7 @@
  ******************************************************************************/
 
 /**
- * @author Lars Michelsen <lars@vertical-visions.de>
+ * @author Lars Michelsen <lm@larsmichelsen.com>
  */
 class CoreModSearch extends CoreModule {
     protected $CORE;
@@ -44,7 +44,7 @@ class CoreModSearch extends CoreModule {
                 case 'view':
                     // Check if user is already authenticated
                     if($AUTH->isAuthenticated()) {
-                        $VIEW = new NagVisViewSearch($this->CORE);
+                        $VIEW = new ViewSearch();
                         $sReturn = json_encode(Array('code' => $VIEW->parse()));
                     } else {
                         $sReturn = '';

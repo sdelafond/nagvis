@@ -3,7 +3,7 @@
  *
  * CoreAuthHandler.php - Handler for authentication modules
  *
- * Copyright (c) 2004-2011 NagVis Project (Contact: info@nagvis.org)
+ * Copyright (c) 2004-2016 NagVis Project (Contact: info@nagvis.org)
  *
  * License:
  *
@@ -29,7 +29,7 @@
  * module handles the information gathered from the webservers vars or the
  * frontend.
  *
- * @author Lars Michelsen <lars@vertical-visions.de>
+ * @author Lars Michelsen <lm@larsmichelsen.com>
  */
 class CoreAuthHandler {
     private $SESS;
@@ -137,7 +137,7 @@ class CoreAuthHandler {
     }
 
     public function isAuthenticated() {
-        if((bool) cfg('global', 'audit_log') === true)
+        if(cfg('global', 'audit_log') == true)
             $ALOG = new CoreLog(cfg('paths', 'var').'nagvis-audit.log',
                               cfg('global', 'dateformat'));
         else
@@ -178,7 +178,7 @@ class CoreAuthHandler {
         if(!$enforce && !$this->logoutSupported())
             return false;
 
-        if((bool) cfg('global', 'audit_log') === true) {
+        if(cfg('global', 'audit_log') == true) {
             $ALOG = new CoreLog(cfg('paths', 'var').'nagvis-audit.log',
                               cfg('global', 'dateformat'));
             $ALOG->l('User logged out ('.$this->getUser().' / '.$this->getUserId().'): '.$this->sModuleName);

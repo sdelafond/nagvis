@@ -1,10 +1,6 @@
 <?php
 /*****************************************************************************
- *
- * i18n.php - Instantiates the internationalization in NagVis and registers
- *            the global l() method to translate strings in NagVis
- *
- * Copyright (c) 2004-2011 NagVis Project (Contact: info@nagvis.org)
+ * Copyright (c) 2004-2016 NagVis Project (Contact: info@nagvis.org)
  *
  * License:
  *
@@ -22,6 +18,8 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  *****************************************************************************/
+
+$CORE = GlobalCore::getInstance();
 
 /*
  * l() needs to be available in MainCfg initialization and config parsing,
@@ -83,5 +81,90 @@ function curLang() {
  * connections. This is only done when the pages request data from any backend
  */
 $_BACKEND = new CoreBackendMgmt();
+
+// ----------------------------------------------------------------------------
+// some untilities
+
+function val($arr, $key, $dflt = null) {
+    return isset($arr[$key]) ? $arr[$key] : $dflt;
+}
+
+function state_str($state) {
+    switch($state) {
+        case UNCHECKED:   return 'UNCHECKED';
+        case UNREACHABLE: return 'UNREACHABLE';
+        case DOWN:        return 'DOWN';
+        case UP:          return 'UP';
+        case PENDING:     return 'PENDING';
+        case UNKNOWN:     return 'UNKNOWN';
+        case CRITICAL:    return 'CRITICAL';
+        case WARNING:     return 'WARNING';
+        case OK:          return 'OK';
+        case ERROR:       return 'ERROR';
+        default:          return 'ERROR'; // unspecified state
+    }
+}
+
+function state_num($state_str) {
+    $a = array(
+        'UNCHECKED'     => UNCHECKED,
+        'UNREACHABLE'   => UNREACHABLE,
+        'DOWN'          => DOWN,
+        'UP'            => UP,
+        // services
+        'PENDING'       => PENDING,
+        'UNKNOWN'       => UNKNOWN,
+        'CRITICAL'      => CRITICAL,
+        'WARNING'       => WARNING,
+        'OK'            => OK,
+        // generic
+        'ERROR'         => ERROR
+    );
+    return $a[$state_str];
+}
+
+function is_host_state($state) {
+    return $state == UNCHECKED || $state == UNREACHABLE || $state == DOWN || $state == UP;
+}
+
+function listIconsets() {
+    global $CORE;
+    return $CORE->getAvailableIconsets();
+}
+
+function listBackendIds() {
+    global $CORE;
+    return $CORE->getDefinedBackends();
+}
+
+function listHeaderTemplates() {
+    global $CORE;
+    return $CORE->getAvailableHeaderTemplates();
+}
+
+function listHoverTemplates() {
+    global $CORE;
+    return $CORE->getAvailableHoverTemplates();
+}
+
+function listContextTemplates() {
+    global $CORE;
+    return $CORE->getAvailableContextTemplates();
+}
+
+function listHoverChildSorters() {
+    return Array(
+        'a' => l('Alphabetically'),
+        's' => l('State'),
+        'k' => l('Keep original order'),
+    );
+}
+
+function listHoverChildOrders() {
+    return Array(
+        'asc'  => l('Ascending'),
+        'desc' => l('Descending'),
+    );
+}
 
 ?>

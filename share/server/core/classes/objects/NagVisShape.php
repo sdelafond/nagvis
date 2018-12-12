@@ -4,7 +4,7 @@
  * NagVisShape.php - Class of a Shape in NagVis with all necessary
  *                  information which belong to the object handling in NagVis
  *
- * Copyright (c) 2004-2011 NagVis Project (Contact: info@nagvis.org)
+ * Copyright (c) 2004-2016 NagVis Project (Contact: info@nagvis.org)
  *
  * License:
  *
@@ -24,7 +24,7 @@
  *****************************************************************************/
 
 /**
- * @author	Lars Michelsen <lars@vertical-visions.de>
+ * @author	Lars Michelsen <lm@larsmichelsen.com>
  */
 class NagVisShape extends NagVisStatelessObject {
     /**
@@ -32,18 +32,18 @@ class NagVisShape extends NagVisStatelessObject {
      *
      * @param		Object 		Object of class GlobalMainCfg
      * @param		String	 	Image of the shape
-     * @author	Lars Michelsen <lars@vertical-visions.de>
+     * @author	Lars Michelsen <lm@larsmichelsen.com>
      */
-    public function __construct($CORE, $icon) {
+    public function __construct($icon) {
         if(self::$iconPath === null) {
-            self::$iconPath      = $CORE->getMainCfg()->getPath('sys',  'global', 'shapes');
-            self::$iconPathLocal = $CORE->getMainCfg()->getPath('sys',  'local', 'shapes');
+            self::$iconPath      = path('sys',  'global', 'shapes');
+            self::$iconPathLocal = path('sys',  'local', 'shapes');
         }
 
         $this->icon = $icon;
         $this->type = 'shape';
 
-        parent::__construct($CORE);
+        parent::__construct();
     }
 
     /**
@@ -52,7 +52,7 @@ class NagVisShape extends NagVisStatelessObject {
      * Parses the object in json format
      *
      * @return	String		JSON code of the object
-     * @author	Lars Michelsen <lars@vertical-visions.de>
+     * @author	Lars Michelsen <lm@larsmichelsen.com>
      */
     public function parseJson() {
         // Checks wether the shape exists or not
@@ -67,7 +67,7 @@ class NagVisShape extends NagVisStatelessObject {
      *Gets the hover menu of a shape if it is requested by configuration
      *
      * @return	String	The Link
-     * @author 	Lars Michelsen <lars@vertical-visions.de>
+     * @author 	Lars Michelsen <lm@larsmichelsen.com>
      */
     public function getHoverMenu() {
         if(isset($this->hover_url) && $this->hover_url != '')
@@ -80,7 +80,7 @@ class NagVisShape extends NagVisStatelessObject {
      * Is executed to detect missing shape images. Is not doing anything
      * when the shape image is an URL.
      *
-     * @author	Lars Michelsen <lars@vertical-visions.de>
+     * @author	Lars Michelsen <lm@larsmichelsen.com>
      */
     public function fetchIcon() {
         if($this->icon[0] != '[') {

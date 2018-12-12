@@ -1,3 +1,722 @@
+1.9.10
+Frontend
+  * FIX: Network error popups are now shown when an error occurs and hidden again
+         automatically when a subsequent call succeeds
+
+1.9.9
+Frontend:
+  * FIX: Fixed possible "Cannot read property 'conf' ... Line 4383" error when
+         trying to interact with the map while it is initially loading
+  * FIX: Fixed incompatibility with PHP 7.2 when creating new users
+  * FIX: Fixed loading sounds when using non standard HTTP/HTTPS ports
+  * FIX: Fixed "JavaScript Error : checkHideMenu" on worldmaps when header is
+         disabled
+
+1.9.8
+Frontend:
+  * FIX: Fixed incompatibility with PHP 7.2 in Dwoo 3rd party code
+  * FIX: Fixed outdated Monitoring portal link in header menu
+
+Automap:
+  * FIX: Fixed automaps filter_group when using ndomy/pgsql backend
+
+Installer:
+  * FIX: Prevent error when trying to replace old map options and no map exists
+
+1.9.7
+Frontend:
+  * FIX: Fixed object sort by state regression in 1.9.6
+
+1.9.6
+Core:
+  * Dynamic map objects can now be sorted by state (Using the new map global
+    settings dynmap_sort and dynmap_order)
+  * FIX: Improved error handling when trying to use aggregation objects with
+         backends that don't support these object types
+  * FIX: Fixed "A non-numeric value encountered" when creating new automaps
+         without width/height attributes. A workaround would be to add
+	 height/width options manually to the map configuration.
+
+1.9.5
+Frontend:
+  * FIX: Fixed wrong hostname label in service hover menus
+  * FIX: Fixed repeated zoom of background image on state updates
+
+Worldmap:
+  * FIX: Fixed errors when saving viewport as new map
+  * FIX: Fixed rare issue when cloning just added objects
+  * FIX: Fixed broken worldmap when using relative objects
+
+Installer:
+  * FIX: Fixed displaying wrong backend option "-b" in summary output
+  * FIX: Don't display "update backend configuration" confirm in quiet mode
+  * FIX: Don't fail updating map configurations when no maps are defined
+  * FIX: Don't register demo rotation when using the "-o" option
+
+1.9.4
+Core:
+  * List of hover menu childs (e.g. services in host object hover) can now be
+    left unsorted (keep original sorting). This is useful for aggregation objects
+    where the single elements have a defined order and should not be sorted by state
+    (Configure this per object by adding the attribute hover_childs_sort=k).
+
+Frontend:
+  * On demand automaps: Hostgroup filter in header menu is now a searchable dropdown field 
+  * FIX: Fixed moving textbox objects in IE
+
+1.9.3
+Core:
+  * Multisite auth: Dropped support for WATO folder permissions
+    (See
+    http://git.mathias-kettner.de/git/?p=check_mk.git;a=commit;h=6a1845bcba346111c391f28dfc3214b0e5dd8876)
+
+Frontend:
+  * std_html_bar Gadget: Added new optional parameters "perfdata" to specify
+  the perfdata index to show and "border" to enable/disable the border of the
+  bar using the values 0/1
+
+1.9.2
+Core:
+  * The default values for the "url" option of map objects can now be
+    configured in the map global sections using the options
+    host_url, hostgroup_url, service_url, servicegroup_url, map_url,
+    dyngroup_url and aggr_url
+
+1.9.1
+Core:
+  * FIX: Fixed incompatibility with pecl-http (Cannot redeclare http_redirect()) 
+  * FIX: Fixed duplicate global section in sample automaps after editing
+
+Frontend:
+  * FIX: Fixed wrong positioned labels of gadgets
+  * FIX: Added missing stale images of the std_small iconset
+  * FIX: Fixed map update (background color, title, favicon) on changed state
+
+1.9
+Core:
+  * MKBI backend: New option "auth_secret_file" to read the secret from a file
+
+1.9b19
+Core:
+  * FIX: Fixed "hanging" user/role related actions with older SQLite versions
+    (e.g. seen on CentOS 6 or older)
+
+Frontend:
+  * FIX: Fixed problems while editing roles of users
+  * FIX: Fixed checkHideMenu is not defined issue when header menu is disabled
+
+Installer:
+  * FIX: Fixed install of apache config to /etc/apache2/config-available
+         instead of /etc/apache2/config-available/conf.d
+
+1.9b18
+Core:
+  * FIX: Fixed additional PHP 5.3 compatibility issue with new pgsql/ndomy code
+
+1.9b17
+Core:
+  * FIX: Fixed PHP 5.3 compatibility issue with new pgsql/ndomy code
+
+1.9b16
+Core:
+  * FIX: Fixed broken service group processing with pgsql/ndomy backends
+
+Frontend:
+  * FIX: Temporary template files/directories are now created only user writable
+
+1.9b15
+Core:
+  * New backend "pgsql" to connect with PostgreSQL databases of Icinga
+    (Thanks a lot to Peter Pentchev for doing the work!)
+  * FIX: Security fix: Authenticated users could read contents of local files
+         by opening a custom URL (#29). Only https/http URLs can now be used.
+  * FIX: Security fix: Only configured ULRs can be fetched using the Url module (#29)
+
+1.9b14
+Frontend:
+  * FIX: Fixed wrong positioning of icon labels during object refresh (when no
+         state but plugin output or perfdata changed) (#81 #93)
+  * FIX: Fixed too small stale icons of the std_medium iconset
+
+1.9b13
+Frontend:
+  * FIX: Fixed Javascript error when closing the object edit dialog after
+         using the color picker
+  * FIX: Now really fixed refresh of changed map properties (like background image)
+  * FIX: Fixed possible XSS in std_table.php gadget (#91, CVE-2017-6393)
+         (If you want to solve this issue for your installation without updating NagVis,
+	  you can remove the file std_table.php from your installation. It is
+	  only needed if you use the std_table.php gadget.)
+
+1.9b12
+Frontend:
+  * FIX: Fixed possible empty maps when manually disabling the header menu
+  * FIX: Fixed refresh of changed map properties (like background image)
+
+Core:
+  * FIX: Fixed NDO/IDO MySQL backend compatibility with ONLY_FULL_GROUP_BY MySQL
+    mode (Thanks to SteScho)
+  * FIX: NDO/IDO MySQL backend: Fixed problem connecting to database
+  * FIX: NDO/IDO MySQL backend: Fixed problem reporting database connection issues
+
+1.9b11
+Core:
+  * FIX: Livestatus backend was calculating wrong services for host group
+         objects having the "exclude_members" attribute configured
+  * Check_MK BI backend: Added "timeout" parameter to adapt the default
+    5 second timeout
+  * NDO/IDO MySQL backend: Now using mysqli PHP functions (Thanks to SteScho)
+  * NDO/IDO MySQL backend: Fixed compatibility with ONLY_FULL_GROUP_BY MySQL
+    mode (Thanks to SteScho)
+
+Frontend:
+  * FIX: Fixed wrong positioning of icon labels (regression since ~1.9b9)
+  * FIX: Fixed lines using ack_bgcolor (when configured)
+  * FIX: Fixed wrong visualization (hover text, line color) of acknowledged services
+  * FIX: Overview page: Fixed disappearing maps on state changes
+  * FIX: Sidebar menu: Deleted maps were still visible in sidebar
+  * FIX: Fixed broken error message in case of communication issue during updates
+
+1.9b10
+Core:
+  * CoreLogonMultisite: In case a user is already authenticated via the web
+    server, the authenticated user name is treated as authenticated, just
+    like when using LogonEnv. If no user is authenticated, the regular
+    Check_MK multisite login is done
+
+Frontend:
+  * Added localization for Simplified Chinese (zh_CN) (Thanks to Kevin Jin!)
+  * FIX: Fixed removal of labels and hover menus right after editing objects
+  * FIX: Fixed repositioning of (line) labels on object updates
+
+Worldmap:
+  * FIX: Fixed broken worldmap (duplicate global section) after saving viewport
+  * FIX: Fixed "TypeError: this.objects[parentObjId] is undefined" issue on
+         worldmap when having long lines and zooming in a lot
+
+1.9b9
+Core:
+  * FIX: CoreAuthorisationModGroups - Logout of users is now possible
+
+Frontend:
+  * FIX: Fixed missing context menu for stateless lines
+  * FIX: Fixed line actions in case of scrolled browser windows
+  * FIX: Closing eventual open context menu when dragging an object
+  * FIX: Gadgets can now be dragged again
+
+Automap:
+  * filter_by_state=1 can now be used with automaps using the NDO MySQL backend
+  * FIX: Fixed possible error "TypeError: this.objects[parentObjId] is undefined..."
+  * FIX: Fixed automap issue when object having redundant links
+
+Worldmap:
+  * FIX: Fixed broken left click URLs of objects after editing attributes
+         until next reload
+  * FIX: Fixed keeping lock state of objects after editing object attributes
+
+1.9b8
+Core:
+  * MK BI backend: Now prints an error message when trying to use it with
+    objects that are not aggregations.
+  * NDO MySQL backend: Filtering out legacy objects from DB (setting is_active filter)
+  * FIX: Updated php-gettext to 1.0.12 and commented out unused code because it contains
+    some exploitable PHP code which could be used to inject code using modified .mo files.
+    However, NagVis has never used these functions, so was never affected by this issue.
+
+Frontend:
+  * FIX: Fixed error in ad-hoc automaps (Network Topology in Check_MK) during state updates
+  * FIX: Prevent JS/CSS caching issues during updates of NagVis
+  * FIX: Improved error handling in case of modifying objects which
+    backends report issues
+  * FIX: Improved error handling in case of missing backend configured
+  * FIX: Fixed keeping unlisted values of dropdowns (object names, backend_id)
+  * FIX: Cleaning up host/service attributes when changing the backend_id
+  * FIX: Fixed broken hover_delay (JS error when hovering an object)
+  * FIX: Multisite Snapin: Fixed wrong EDIT link
+  * FIX: Improved error handling in case of internal server error (500)
+  * FIX: The host and service downtime/acknowledgement URLs in context menu
+         can now be configured via main configuration
+
+Automap:
+  * FIX: Fixed error when searching for objects on non initialized automaps
+
+Worldmap:
+  * FIX: Fixed permanent error state showed by automap objects on worldmaps
+
+1.9b7
+Fronted:
+  * FIX: Fixed "function sidebarUpdatePosition is not defined" when header not shown
+  * FIX: The context menus can now be disabled again (e.g. using URL var context_menu=0)
+
+Core:
+  * FIX: Fixed some compatibility issues with PHP 7. NagVis should work with it.
+    The NDOMySQL backend is known not to work with PHP 7. Use MKLivestatus instead.
+
+1.9b6
+Frontend:
+  * FIX: Fixed possible wrong scaling of icons when using NagVis zoom
+  * FIX: Fixed moving objects on zoomed maps
+  * FIX: Fixed line create indicator position on zoomed maps
+  * FIX: Labels of weathermap lines were rendered multiple times overlaying
+	 eachother during state / perfdata changes
+  * FIX: Map permissions where mixed up (delete permissions was granted when
+         adding view permissions, ...)
+  * FIX: Added missing "modify map" menu for users with limited edit permissions
+  * FIX: Fixed broken add/modify page for users with limited edit permissions
+  * FIX: Template management: Fixed wrong options shown on result page after editing
+
+Core:
+  * FIX: Fixed error with Icinga 2 when querying for not existant objects
+    (happened with default worldmap in previous versions)
+  * FIX: Livestatus backend is now returning correct host info for pending hosts
+
+1.9b5
+Frontend:
+  * FIX: Multisite Snapin: Fixed broken snapin contents
+  * FIX: Fixed the bandwith showing weathermap lines showing BW values again
+  * FIX: Fixed update of the hover menu child infos while a map is open
+  * FIX: Fixed broken header toggle icon on on-demand-automaps
+  * FIX: Fixed wrong scaling of object labels in IE
+
+Core:
+  * FIX: Negative lat/long coordinates can now be configured
+  * Changed handling of deprecated map object attributes: They are silently
+    ignored by NagVis now. We inform users about deprecated (useless)
+    attributes in the ChangeLog and will mark old options in the documentation,
+    but the map loading will not be affected by the deprecated options anymore
+  * BI-Backend: Is now handling the acknowledgement and downtime infos of BI
+  * FIX: Fixed possible broken global section during editing of maps when an
+    object on the map got an object ID starting with "0e."
+  * FIX: Added proper error message when trying to use dynamic groups with NDO
+         MySQL backend (which does not support dynamic groups)
+  * FIX: Only reading map configuration files with lower ".cfg" suffix. Maps
+         having e.g. an upper case ".CFG" suffix caused problems in NagVis and
+	 will not be read anymore. Please rename your map config files to match
+	 the ".cfg" suffix.
+
+Automap:
+  * FIX: Fixed exception when filtering maps by non existant host groups. Now
+         the map is just left empty instead of raising an exception.
+
+1.9b4
+Frontend:
+  * FIX: Fixed JS error in case of re-rendering stateless objects
+  * FIX: Fixed JS error "yOffset is not defined" when rendering lines of type 14
+  * FIX: Fixed wrong label for inbound absolute traffic on lines of type 14
+
+Core:
+  * FIX: Fixed issue "The attribute is unknown." when adding/editing objects
+         with PHP < 5.4
+
+1.9b3
+Core:
+  * FIX: NDO/IDO backend: Correctly excluding deprecated objects from hosts and
+    hostgroups (having is_active=0 set)
+
+Frontend:
+  * Supporting some more older browsers. Very outdated browsers will get an
+    error message when they don't support essential features
+  * Multisite Snapin: Added link to overview page for creating / editing maps
+  * FIX: Fix Undefined variable: list when there is no map
+
+Geomap:
+  * Improved error handling when creating geomaps but missing width or height
+  parameters
+
+Automap:
+  * Added missing option "prism" to overlap parameter
+  * FIX: Detecting and preventing loops in automap
+    (Fixes PHP error: Allowed memory size ...  bytes exhausted)
+
+1.9b2
+Core:
+  * FIX: Improved handling of not existing objects when using Test backend
+
+Frontend:
+  * Using color picker for color configuration in global settings
+  * Removed mostly useless "create background" form (you can use the background_color)
+  * Grouped permissions in role permissions config in tabbed navigation
+  * FIX: Fixed icon_size related PHP errors in some PHP versions (implode error)
+  * FIX: Fixed issue in backend management when adding/editing backends
+  * FIX: Fixed usability issues when selecting object names from name lists
+    while adding / editing objects
+  * FIX: Fixed js error when weathermap lines get no perfdata at all
+  * FIX: Fixed form submit confusions in role and user management dialogs
+
+Worldmap:
+  * FIX: Ignoring min_zoom/max_zoom when min_zoom equal or larger than max_zoom
+
+1.9b1
+Core:
+  * Added option only_permitted_objects to restrict the objects a user can see
+    to the objects which a user is a contact for. This feature is currently
+    used only with the livestatus backend. It's disabled by default to keep
+    the default behaviour of NagVis. Thanks to norbert for providing the patch!
+  * Stale object states have the same state weight as when they are not stale
+    now. In previous versions the stale states were treated as being "less"
+    worse, but this seem to be logically wrong to me. If you want the old
+    behaviour back, you might change the state weights in your main
+    config.
+  * Deprecated unused config option header_fade / headerfade
+  * Removed unusued config option line_arrow from all objects
+  * Removed unused config option controls_size from main configuration
+
+Worldmap:
+  * Introduced new interactive worldmaps. You can use these maps to position
+    all kind of NagVis objects on a geographical maps where you can browse
+    interactively in (zooming, panning, ...)
+
+Automap:
+  * Reimplemented missing "filter_by_state" functionality
+
+Frontend:
+  * Showing header menu on full page error messages to give the users the
+    option to navigate away from the error situation
+  * Header menu dropdown menus now open on click instead of hover which is
+    hopefully more user friendly as it is more unlikely to open/close the
+    menu unintended
+  * The sidebar is now toggled using a small control below the NagVis logo
+  * Reworked frontend dialogs to show form error messages directly in the dialog
+    instead of showing the old error popup window
+  * The map / object editing dialog is now using a tab navigation to reduce
+    the number of options shown at once for a more user friendly handling
+  * It's now possible to use the macro [obj_display_name] in child objects
+   in hover menus of hosts or any other objects having childs (Thanks to
+   Andreas Steinel)
+  * Dropped jsGraphics line rendering (browser needs to support canvas now)
+    for being able to use lines within NagVis
+  * Maps are not reloaded anymore when adding/editing objects. Only the
+    affected objects on the map are reloaded
+  * Overview: Broken map configs do not prevent to open the map anymore
+  * Lines: Are now rendered nicely on high resolution devices (e.g. 4k screens)
+  * Lines: Re-implemented borders round the lines for better visibility
+  * Lines: Removed line action areas (small dotted boxes). The line related
+    actions (hover, context, link) are now possible on the whole lines
+  * Removed need to confirm object deletion (you already need at least two clicks:
+    open the context menu, maybe unlock, and then click on delete)
+  * Adding/modifying map objects does not trigger map reload anymore. This makes
+    editing maps much more fun since you can do your work much faster! :-)
+  * Labels: When center/Bottom positioned labels are dragged, the resulting
+    coordinates will still be relative ones to the object coordinates
+  * Labels: When dragging relative positioned labels, the object is highlighted
+  * Showing hint about absolute/relative coords while dragging objects
+  * FIX: Stateless lines now handle line_color and line_color_border correctly
+  * FIX: Removed useless weathermap line type selections from stateless lines
+  * FIX: Fixed annoying browser warning message when reloading pages which
+    are shown up right after logging in to NagVis
+  * FIX: Fixed duplicate map config processing for rendering the header menu
+  * FIX: Fixed js error when moving an object out of the screen
+
+1.8.6
+Core:
+  * FIX: Template objects can now be used recursive
+  * FIX: Fixed missing Url/view/* permission. It was not possible to permit
+  non admin users to access external URLs in rotation pools without this
+  permissions.
+
+1.8.5
+Core:
+  * FIX: Livestatus Backend: Fixed exception handling when fetching services
+    which are marked to be in a downtime, but the downtime defails can not
+    be fetched
+  * FIX: Fixed missing Action/perform/* permission for auth databases created
+    with NagVis versions newer than NagVis 1.7b3. All auth databases which
+    have been created before, have the Action/perform/* permission available.
+    It was not possible to permit user not having the */*/* permission to the
+    acknowledgement and custom actions via the context menu
+
+Frontend:
+  * Multisite Snapin: Improved performance when a lot of users use the snapin.
+    The snapin contents were calculated on each access in the past. Now, the
+    snapin contents are cached for 15 seconds. This gives a good performance
+    boost when multiple users have use the snapin while having access to the
+    same set of maps.
+
+1.8.4
+Core:
+  * FIX: BI Backend: Fixed wrong summary state of aggregation objects when
+    not using the worst aggregation function. NagVis is now using the summary
+    state provided by the backend
+  * BI Backend: it's now possible to use URLs configured in object attributes
+
+1.8.3
+Core:
+  * FIX: Fixed error in example custom actions for RDP and SSH
+  * FIX: Fixed showing wrong options for [defaults] hoverchildssort global cfg
+  * FIX: Fixed error with Check_MK integration when user is not permitted to
+         write a WATO folder related map
+  * FIX: Fixed choosing services from test backends
+
+Automap:
+  * FIX: The pseudo map root node is also shown when another host is the root
+  * FIX: The pseudo map root node can be made root again by context menu
+  * FIX: Fixed setting too many view options when changing the root node
+
+Frontend:
+  * FIX: Forcing IE to always use the last available engine
+  * FIX: Fixed dynmap_object_types exception after creating a dynmap
+    (the option is not declared as being mandatory anymore)
+  * FIX: Maps with source related problems (like geomaps without location file)
+    can now be deleted again using the map management dialog
+  * FIX: Don't raise whole page errors when fetching of container URLs failed
+    instead the javascript error message is shown in the container
+  * FIX: Fixed too many context actions showing up for non host objects
+  * FIX: Hiding eventual open color pickers on closing frontend windows
+  * FIX: It's possible to put javascript code in labels or textboxes again
+
+1.8.2
+Core:
+  * Improved handling of map config files without read permissions on overview
+    page and in header menu (such maps are simply hidden)
+  * NagiosBP-Backend: Fixed exception when component state is not known
+
+Frontend:
+  * FIX: Map import: Added missing validation of map name format
+  * FIX: Hiding "loading..." animation when maps are disabled on overview page
+  * FIX: Fixed sorting of maps on overview page
+  * FIX: Fixed js exception "g_map_names" not defined when having
+         header_show_states set to disabled
+  * FIX: Fixed overlapping sub-hover menus for adding icons/lines
+
+1.8.1
+Core:
+  * It is now possible to configure external URLs within rotations in two types:
+    a) embed it directly on the page: [http://url...]
+       This is useful when including only snippets of HTML without own styles,
+       scripts etc.
+    b) show the URL within an iframe: [iframe:http://...]
+       This is useful when including a whole webpage with own styles and scripts
+
+Frontend:
+  * FIX: Fixed form processing (e.g. user- and role management, pw change dialogs)
+  * FIX: Cached ajax queries last no longer than 30 seconds now
+
+1.8
+Core:
+  * All stateful objects can now be rendered as gadgets
+    (Although there is no gadget available yet which is useful for objects
+    which have no perfdata. But you can build one now)
+  * The option gadget_type is now deprecated as the type is automatically detected
+  * Gadgets can use object member states now
+    Gadgets are now called with mixed POST request where the GET vars used in previous
+    versions are still handed over to the gadgets per GET parameters to
+    maintain compatibility. More complex parameters are now given to the
+    gadget with POST vars. For example there is the POST var "members" now,
+    which provides information about the object members states.
+  (e.g. to be able to parse units like Kb/s, even when they are not allowed
+  according to nagios plugin guidelines)
+  * FIX: gadgets_core.php perfdata parsing allows "/" for perfdatas UOM now
+
+Frontend:
+  * Huge update of GUI design for a more consistent look n feel
+  * Overview page uses whole page width (floating layout) for maps
+  * Deprecated "cellsperrow" configuration option in [index] section
+  * URLs of shape images can now be configured via configuration dialog
+  * Added std_table.php gadget which can render state tables for any stateful object type
+    (Thanks to Thibault Cohen for providing the idea and base code!)
+  * Usability fix: Header dropdowns now only close when clicking somewhere out
+    of the menu instead of hiding when moving the mouse out of the menu
+  * Reworked map management dialog for more comfortable form handling (errors, validation etc.)
+  * Map sources can now only be selected during map creation via GUI. When you like to
+    change map sources for an existing map, you will need to to it by modifying the
+    map configuration files directly. But this should be a very rare situation
+  * FIX: Fixed exception when trying to define Multiple/Other values for "sources"
+  * FIX: Fixed relative label positioning (center, bottom) on first page load sometimes wrong
+
+1.8rc3
+Core:
+  * New backend: Check_MK Business Intelligence (mkbi) which can be used to
+    add Check_MK BI aggregations to your maps
+      (Configure this new backend, then add "Aggregation" objects to your maps)
+  * FIX: Livestatus: Fixed wrong state aggregation for dynamic service groups
+
+Frontend:
+  * FIX: Changed sorting of maps in sidebare/header to ignore case of names (natural sorting)
+  * FIX: Fixed exception preventing editing the map options of geomaps
+
+1.8rc2
+Core:
+  * FIX: Aliases were not processed for host- and servicegroups
+  * FIX: Fixed mixed up version number in 1.8rc1
+
+1.8rc1
+Geomap:
+  * FIX: Fixed handling of multiple backends on one geomap
+
+Core:
+  * FIX: Livestatus: Fixed wrong state aggregation for servicegroups
+  * FIX: Livestatus: Fixed check_command value of host/services
+
+Frontend:
+  * Service-/Hosttags are shown in default hover template now (when available)
+  * Taggroups, values and their titles can now be used to be displayed in hover menu
+    (When using NagVis in an OMD environment together with Check_MK 1.2.5i6p4 or newer)
+  * Reworked main configuration editing dialog to be much more user friendly
+  * Consolidated styling of the popup dialogs
+  * FIX: Background images could not be deleted
+  * FIX: Natural sorting object names in add/modify dialog
+
+1.8b7
+Frontend:
+  * Highlighting the current map in sidebar and header dropdown menus
+  * FIX: The zoombar is now rendered below the header menu layer
+  * FIX: The line_arrow is now configured using a dropdown field
+
+Core:
+  * Multisite Authorisation: It is now possible to specific manage map view/edit permissions
+  * Livestatus: Added missing space OutputFormat livestatus header (worked before, but was
+    implementing the livestatus protocol strictly not strict
+  * Livestatus: Using "name" column instead of "host_name" when querying the hosts table now
+    (Also worked as implemented before, but was using non documented livestatus behaviour)
+
+Automap:
+  * Now using line_color and line_width for connectors from map global definitions
+  * Now using label_(show|border|background|maxlen) definitions from map globals
+  * FIX: Removed useless "Make root" link for connector lines
+  * FIX: Removed map editing options from menus which make no sense
+  * FIX: Removed line_type option from map global definitions
+
+Geomap:
+  * FIX: Removed map editing options from menus which make no sense
+  * FIX: Removed not working geomap types osmarender and cycle
+  * FIX: Removed global map parameter map_image. Technically it could be changed,
+         but seems a bit senseless for geomaps
+         (where the background is rendered automatically)
+  * FIX: Tried to fix geomap_zoom parameter, but does still not work with all zoom levels
+
+1.8b6
+Geomap:
+  * Geomaps support multiple backends as object source now
+
+1.8b5
+Frontend:
+  * Multisite snapin: Parent maps in tree mode can now be clicked to open the map
+  * Add support for secure and httponly cookies (sesscookiehttponly,  sesscookiesecure)
+    (Thanks to mikael.falkvidd@op5.com for the patch)
+  * FIX: Fixed links of rotation steps (always linking to last step)
+  * FIX: Hiding empty "Action" header menu entry on overview page
+  * FIX: Trying to fix too long map list in dropdown menu (menu is scrollable now)
+  * FIX: Fixed small styling issues in header menu
+
+Core:
+  * Dealing with the staleness value of hosts and services as a new sub-state
+  (like downtime / ack); The staleness marks the state of a host/service as outdated
+  * FIX: Deleting no longer required map permission entries (e.g. of maps deleted
+  by hand) before rendering the manage roles dialog
+  * FIX: Updating map permissions during renaming of maps (not renaming via CLI)
+
+1.8b4
+Frontend:
+  * Multisite snapin now transports downtime / acknowledgement information
+  * FIX: Custom context actions: Conditions, e.g. filtering by custom vars, did not work
+  * FIX: Fixed zoom of text in textbox objects in chrome
+  * FIX: Not altering relative object coordinates when zoom_scale_objects is
+  disabled
+  * FIX: Disabling save button during adding new objects to prevent double adding
+  * FIX: Roles can not be deleted when used by users
+  * FIX: Last assigned role can now be removed from a user
+
+Automap:
+  * FIX: Removed debug code which might prevent map rendering in some cases
+
+1.8b3
+Frontend:
+  * Added option "zoom_scale_objects" to default section of global config to
+    allow users to control the scaling behaviour of zoomed objects. By 
+    default the whole maps is zoomed like in previous versions. But when 
+    zoom_scale_objects is set to 0, the map objects and labels are not 
+    resized, but only repositioned according to the given zoom factor.
+  * FIX: Fixed broken NagVis Multisite sidebar dashlet
+  * FIX: Fixed showing URLs as hover menus (hover_url option)
+  * FIX: Coord calculation - better validation in internal code
+    (Thanks to Daniel Albers for the patch)
+  * FIX: Add/Modify dialog: scroll to top of page on submission
+  * FIX: Add object: Stop adding an object when clicking on header menu
+  * FIX: center/bottom label positions now work with lines
+
+Core:
+  * Allowing ~ chars in URLs now (Thanks to Daniel Albers for the patch)
+  * FIX: Fixed rare occuring encoding problems of vars in several places 
+  * FIX: Fixed PHP error with map objects linking to not existing maps
+  * FIX: Trying to workaround broken processing of non UTF-8 pages in hover_urls
+
+Geomap:
+  * FIX: Improved error handling in case of invalid webservice data
+
+1.8b2
+Frontend:
+  * FIX: Fixed warning icon of std_area iconset
+
+Core:
+  * Processing Rotation/view/* permission when using Multisite authorisation
+  * FIX: Fixed PHP error when using status hosts in backends
+  * FIX: Encoding _origtarget URL parameter handed over to multisite now
+  * FIX: The NDO backend is now usable again with maps and automaps
+    (Just for the next stable release - on the later releases it will be dropped)
+  * FIX: The NagiosBP backend is now usable again
+  * FIX: Fixed host alias attribute in livestatus backend
+  * Dropped the merlinmy backend for the moment as it was not working for a
+    time. Please provide a fixed one if you like to see this working again
+  * FIX: Fixed PHP errors when acknowleding host/service problems 
+  * FIX: Fixed missing values alias, display_name, address values in hover templates
+
+Installer:
+  * FIX: Installer uses /etc/apache2/conf-available instead of the old conf.d
+         directory for installing it's apache sample configuration. It is
+         currently not enabled by default. Use "a2enconf nagvis" to enable it.
+
+1.8b1
+Core:
+  * Changed internal structures to improve memory consumtion on large maps
+  * Added authorisation module based on the users contact group memberships
+    defined in the monitoring core
+  * It is now possible to merge states of host, hostgroup and servicegroup
+    objects with equal names from different backends. For example, this can
+    be used to create a single hostgroup object on a map which is populated
+    by different hostgroups from several monitoring instances. This is simply
+    configured by putting several backend ids to the backend_id parameter
+    (separated by ",").
+  * Added new object called "dynamic groups". Can only be used with livestatus
+    backend. It uses the configuration option object_filter to group a dynamic
+    list of services or hosts in a NagVis map object without having to define
+    it in the monitoring core.
+  * Added new map source "dynmap" which can be used to realize some sort of
+    dynamic maps. Those maps list several objects matching a given livestatus
+    filter on the map. In first instance it automatically gathers the list of
+    objects to add on this map and positions them in a grid on the map. The
+    user can then modify all the objects, for example change their options
+    like, positions and visualisation. 
+  * Changed default http_timeout from 10 to 2 seconds
+  * Added new iconset std_area, which can be used to create maps which are
+    visible from a greater distance
+
+Automap:
+  * Added "on-demand-filter" header menu to support quick filter mechanism
+    for on demand automaps
+  * Host labels are now limited to 14 chars on automaps
+  * Again, trying to improve the default automap rendering
+
+Frontend:
+  * All nodes with assigned childs in sidebar are now expandable. The state
+    is stored for each user individually.
+  * Changed map rendering on overview from a single bulk request to one
+    request per map.
+  * Added optional zoom bar and mousewheel zoom handlers (ALT + wheel move)
+    (Must be enabled with option "zoombar=1")
+  * Added new option multisite_snapin_layout to render the multisite snapin
+    in a "tree" instead of a "list"
+  * Summary states of maps can now be displayed in the sidebar menu (must be
+    enabled by setting header_show_states=1 in [defaults] section in global
+    configuration)
+  * The "zoom" parameter can be configured to "fill" to make the view fill the
+    whole viewport of the browser
+  * FIX: Fixed centering of overview tables when opening the sidebar
+  * FIX: Fixed mouse pointer confusions when adding a new object and hovering
+    another menu which then shows up the hover menu
+  * FIX: Ajax request: Not setting headers which are usually set by the browser
+  * FIX: Fixed displaying default value in object / global attribute edit dialog
+  * FIX: Fixed dependent attribute update in case of "parent" toggle/untoggle
+
 1.7.10
 Frontend:
   * Weathermap lines now deal with bit/byte values provided by Check_MKs

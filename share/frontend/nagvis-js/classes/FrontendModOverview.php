@@ -3,7 +3,7 @@
  *
  * FrontendModOverview.php - Module for handling the overview page
  *
- * Copyright (c) 2004-2011 NagVis Project (Contact: info@nagvis.org)
+ * Copyright (c) 2004-2016 NagVis Project (Contact: info@nagvis.org)
  *
  * License:
  *
@@ -23,7 +23,7 @@
  *****************************************************************************/
 
 /**
- * @author	Lars Michelsen <lars@vertical-visions.de>
+ * @author	Lars Michelsen <lm@larsmichelsen.com>
  */
 class FrontendModOverview extends FrontendModule {
     private $rotation = '';
@@ -61,14 +61,13 @@ class FrontendModOverview extends FrontendModule {
     }
 
     private function showViewDialog() {
-    // Build index template
-    $INDEX = new NagVisIndexView($this->CORE);
+        // Build index template
+        $INDEX = new NagVisIndexView($this->CORE);
 
         // Need to parse the header menu?
         if(cfg('index','headermenu')) {
             // Parse the header menu
-            $HEADER = new NagVisHeaderMenu($this->CORE, $this->UHANDLER,
-                                           cfg('index', 'headertemplate'));
+            $HEADER = new NagVisHeaderMenu(cfg('index', 'headertemplate'));
 
             // Put rotation information to header menu
             if($this->rotation != '') {
@@ -78,19 +77,18 @@ class FrontendModOverview extends FrontendModule {
             $INDEX->setHeaderMenu($HEADER->__toString());
         }
 
-    // Initialize map view
-    $this->VIEW = new NagVisOverviewView($this->CORE);
+        // Initialize overview view
+        $this->VIEW = new NagVisOverviewView($this->CORE);
 
         // Maybe it is needed to handle the requested rotation
         if($this->rotation != '') {
-            $ROTATION = new FrontendRotation($this->CORE, $this->rotation);
+            $ROTATION = new FrontendRotation($this->rotation);
             $ROTATION->setStep('overview', '', $this->rotationStep);
             $this->VIEW->setRotation($ROTATION->getRotationProperties());
         }
 
-    $INDEX->setContent($this->VIEW->parse());
-
-    return $INDEX->parse();
+        $INDEX->setContent($this->VIEW->parse());
+        return $INDEX->parse();
     }
 }
 ?>
