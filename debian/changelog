@@ -7,6 +7,8 @@ nagvis (1:1.9.10-1) unstable; urgency=medium
 
   [ Sebastien Delafond ]
   * NMU
+  * Imported Debian patch 1:1.7.10+dfsg1-3.2
+  * Update php-gettext link
   * Add Files-Excluded to debian/copyright, even though those files are
     gone in 1.9.x: this will make further repacking more straightforward,
     should it be needed
